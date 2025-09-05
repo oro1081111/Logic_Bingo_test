@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>邏輯賓果（2×2 / 3×3 / 4×4 / 5×5）</title>
+<style>
+  :root{
+    --bg:#f7f8fb; --panel:#ffffff; --text:#1f2937; --muted:#6b7280;
+    --ok:#00DB00;     --ok-bg:#E8FFE8;  --ok-border:#00DB00;
+    --bad:#EA0000;    --bad-bg:#FFE8E8; --bad-border:#EA0000;
+    --cell:#ffffff; --cellBorder:#e5e7eb; --ring:#3b82f6;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"PingFang TC","Microsoft JhengHei",sans-serif;
+    display:flex; align-items:stretch; justify-content:center; padding:14px;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{width:min(760px,96vw); margin:auto;}
+  header{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;}
+  h1{font-size:18px; margin:0}
+  .legend{font-size:12px; color:var(--muted)}
+  .legend .chip{display:inline-block; padding:1px 8px; border-radius:999px; margin-left:6px; border:1px solid #d1d5db}
+  .chip.ok{background:var(--ok-bg); color:var(--ok); border-color:var(--ok-border)}
+  .chip.bad{background:var(--bad-bg); color:var(--bad); border-color:var(--bad-border)}
+
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin:12px 0 8px;
+    background:var(--panel); padding:8px 10px; border-radius:10px; border:1px solid #e5e7eb;
+    box-shadow: 0 1px 8px rgba(0,0,0,.04);
+  }
+  .left{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .select{
+    padding:7px 10px; border:1px solid #d1d5db; border-radius:9px; background:#fff; font-size:14px;
+  }
+  .btn{
+    background:#ffffff; color:#111827; border:1px solid #d1d5db;
+    padding:8px 10px; border-radius:9px; font-size:14px; cursor:pointer;
+    transition: background .15s ease, transform .06s ease, border-color .15s ease, box-shadow .15s ease;
+    touch-action:manipulation;
+  }
+  .btn:hover{ background:#f3f4f6; border-color:#cbd5e1 }
+  .btn:active{ transform: translateY(1px) }
+  .status{ color:#374151; font-size:13px }
+  .status strong{ color:#111827 }
+
+  .board{
+    width:min(620px,94vw);
+    margin:0 auto;
+    display:grid; gap:8px;
+    touch-action:manipulation;
+  }
+  .cell{
+    position:relative; border-radius:12px; padding:8px;
+    background:var(--cell); border:1px solid var(--cellBorder);
+    aspect-ratio:1/1; overflow:hidden; text-align:center;
+    display:grid; grid-auto-rows:max-content; row-gap:6px;
+    place-content:center; place-items:center;
+    transition: transform .08s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    outline:none; box-shadow: 0 1px 6px rgba(0,0,0,.04);
+    content-visibility:auto; contain-intrinsic-size: 200px 200px;
+  }
+  .cell:hover{ transform:translateY(-1px); border-color:#d1d5db }
+  .cell:focus-visible{ box-shadow:0 0 0 3px var(--ring) ; }
+
+  .desc{
+    font-size:clamp(11px,2.0vw,15px);
+    line-height:1.35; color:#111827; letter-spacing:.2px;
+    padding:0 2px; max-width:100%;
+    overflow-wrap:anywhere; word-break:break-word; white-space:normal;
+    text-wrap:balance;
+  }
+  .mark{
+    font-size:clamp(22px,5.2vw,30px);
+    line-height:1; width:1.2em; text-align:center; user-select:none;
+  }
+  .cell.ok{ background:var(--ok-bg); border-color:var(--ok-border); box-shadow: 0 1px 8px rgba(0,219,0,.12); }
+  .cell.bad{ background:var(--bad-bg); border-color:var(--bad-border); box-shadow: 0 1px 8px rgba(234,0,0,.12); }
+
+  .sol{
+    position:absolute; right:6px; bottom:6px;
+    font-size:clamp(14px,4.8vw,20px);
+    opacity:.35; color:var(--ok); pointer-events:none; user-select:none;
+    display:none;
+  }
+
+  .solved{
+    margin-top:10px; padding:10px 12px; border-radius:10px; border:1px solid var(--ok-border);
+    background:var(--ok-bg); color:#075e07; display:none;
+    box-shadow: 0 1px 8px rgba(0,219,0,.12); font-size:14px; text-align:center;
+  }
+  .solved.show{ display:block; }
+
+  .foot{
+    margin-top:10px; font-size:12px; color:#6b7280;
+    border-top:1px dashed #d1d5db; padding-top:8px; text-align:center;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>邏輯賓果</h1>
+      <div class="legend">
+        狀態：
+        <span class="chip ok">符合（綠）</span>
+        <span class="chip bad">未符合（紅）</span>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <div class="left">
+        <label for="size" class="status">棋盤尺寸：</label>
+        <select id="size" class="select">
+          <option value="2">2×2</option>
+          <option value="3">3×3</option>
+          <option value="4" selected>4×4</option>
+          <option value="5">5×5</option>
+        </select>
+        <div class="status">目前勾選數：<strong id="cnt">0</strong>/<strong id="total">16</strong></div>
+      </div>
+      <div>
+        <button class="btn" id="btn-new">產生新題</button>
+        <button class="btn" id="btn-reset">重設盤面</button>
+        <button class="btn" id="btn-solution">顯示解答</button>
+      </div>
+    </div>
+
+    <section class="board" id="board" aria-label="邏輯賓果棋盤"></section>
+
+    <div id="solved" class="solved">🎉 恭喜！目前所有格子的「是否打勾」皆與各自描述的真假一致（全部綠色）。</div>
+
+    <div class="foot">
+      點擊格子切換 空白 → ✅ → ❌（空白/❌皆視為未勾）。<br>
+      若該格描述與「是否打勾」在當前盤面的真假一致 → 綠；否則紅。<br>
+      行＝直（column）、列＝橫（row），周圍=周圍8宮格，不含自身。<br>
+      奧羅桌遊設計工作室-程式實作練習<br>
+    </div>
+  </div>
+
+<script>
+/* ============ 狀態 ============ */
+let N = 4;
+const BLANK=0, CHECK=1, CROSS=2;
+let board = makeEmpty(N);
+let answer = makeEmpty(N);
+let rules  = makeEmpty(N);
+let showSolution = false;
+let ACTIVE_DESCS = [];     // 本題描述庫（依 N 生成一次）
+let BOARD_CTX = null;      // 現行盤面快取（每次 render 一次）
+let ANSWER_CTX = null;     // 答案盤面快取（出題時計算一次）
+
+const boardEl = document.getElementById('board');
+const cntEl = document.getElementById('cnt');
+const totalEl = document.getElementById('total');
+const solvedEl = document.getElementById('solved');
+const btnSolution = document.getElementById('btn-solution');
+const sizeSel = document.getElementById('size');
+
+/* ============ 門檻設定（含 GT 映射） ============ */
+function lineThreshold(N){ return Math.max(1, Math.ceil(0.6*N)); }   // 行/列門檻（≧T / ≦T-1）
+function globalThreshold(N){
+  if (N===2) return 3;
+  if (N===3) return 5;
+  if (N===4) return 9;
+  if (N===5) return 13;
+  return Math.max(1, Math.ceil(0.35*N*N));
+}
+function hasQuadrantRules(N){ return N>=3; }
+
+/* ============ 盤面快取（單次 O(N^2)，之後 O(1) 查詢） ============ */
+function buildContext(b){
+  const rows=new Array(N).fill(0), cols=new Array(N).fill(0);
+  let total=0;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(b[r][c]===CHECK){ rows[r]++; cols[c]++; total++; }
+    }
+  }
+  const corners = (b[0][0]===CHECK) + (b[0][N-1]===CHECK) + (b[N-1][0]===CHECK) + (b[N-1][N-1]===CHECK);
+
+  // 前綴和（查任意矩形內勾選數）
+  const pref = Array.from({length:N+1},()=>new Array(N+1).fill(0));
+  for(let r=1;r<=N;r++){
+    for(let c=1;c<=N;c++){
+      const v = (b[r-1][c-1]===CHECK)?1:0;
+      pref[r][c]=pref[r-1][c]+pref[r][c-1]-pref[r-1][c-1]+v;
+    }
+  }
+  const sumRect=(r0,c0,h,w)=>{
+    const r1=r0+h, c1=c0+w;
+    const R1=Math.min(r1,N), C1=Math.min(c1,N);
+    const R0=Math.max(0,r0), C0=Math.max(0,c0);
+    return pref[R1][C1]-pref[R0][C1]-pref[R1][C0]+pref[R0][C0];
+  };
+
+  // 對角線
+  let mainAll=true, antiAll=true, mainZero=true, antiZero=true;
+  for(let i=0;i<N;i++){
+    const a=(b[i][i]===CHECK), d=(b[i][N-1-i]===CHECK);
+    if(!a) mainAll=false; if(a) mainZero=false;
+    if(!d) antiAll=false; if(d) antiZero=false;
+  }
+
+  // 鄰居矩陣
+  const nb = Array.from({length:N},()=>new Array(N).fill(0));
+  let nbMax=0, nbMin=8;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      let s=0;
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+        if(dr===0&&dc===0) continue;
+        const rr=r+dr, cc=c+dc;
+        if(rr>=0&&rr<N&&cc>=0&&cc<N && b[rr][cc]===CHECK) s++;
+      }
+      nb[r][c]=s; if(s>nbMax) nbMax=s; if(s<nbMin) nbMin=s;
+    }
+  }
+
+  // 整行整列、2×2、縱向相鄰、內部四向
+  let fullRowChecked=false, fullColChecked=false, fullRowUnchecked=false, fullColUnchecked=false;
+  let fullRowCount=0, fullColCount=0;
+  for(let r=0;r<N;r++){
+    if(rows[r]===N){ fullRowChecked=true; fullRowCount++; }
+    if(rows[r]===0){ fullRowUnchecked=true; }
+  }
+  for(let c=0;c<N;c++){
+    if(cols[c]===N){ fullColChecked=true; fullColCount++; }
+    if(cols[c]===0){ fullColUnchecked=true; }
+  }
+  const linesChecked = fullRowCount + fullColCount + (mainAll?1:0) + (antiAll?1:0);
+
+  let ex2x2AllChecked=false, ex2x2AllUnchecked=false;
+  for(let r=0;r<N-1;r++) for(let c=0;c<N-1;c++){
+    const s=sumRect(r,c,2,2);
+    if(s===4) ex2x2AllChecked=true;
+    if(s===0) ex2x2AllUnchecked=true;
+  }
+
+  let vertAdjBothChecked=false, vertAdjBothUnchecked=false;
+  for(let r=0;r<N-1;r++) for(let c=0;c<N;c++){
+    if(b[r][c]===CHECK && b[r+1][c]===CHECK) vertAdjBothChecked=true;
+    if(b[r][c]!==CHECK && b[r+1][c]!==CHECK) vertAdjBothUnchecked=true;
+  }
+
+  let orthAllChecked=false, orthAllUnchecked=false;
+  if(N>=3){
+    for(let r=1;r<N-1;r++) for(let c=1;c<N-1;c++){
+      const u=(b[r-1][c]===CHECK), d=(b[r+1][c]===CHECK), l=(b[r][c-1]===CHECK), ri=(b[r][c+1]===CHECK);
+      if(u&&d&&l&&ri) orthAllChecked=true;
+      if(!u&&!d&&!l&&!ri) orthAllUnchecked=true;
+    }
+  }
+
+  return {
+    total, rows, cols, corners,
+    nb, nbMax, nbMin,
+    sumRect,
+    fullRowChecked, fullRowUnchecked, fullColChecked, fullColUnchecked,
+    mainAll, antiAll, mainZero, antiZero,
+    ex2x2AllChecked, ex2x2AllUnchecked,
+    vertAdjBothChecked, vertAdjBothUnchecked,
+    orthAllChecked, orthAllUnchecked,
+    linesChecked
+  };
+}
+
+/* ============ 描述庫（依 N 生成；eval 使用快取 ctx） ============ */
+function getBaseDescs(N){
+  const LT = lineThreshold(N);
+  const GT = globalThreshold(N);
+  const base = [
+    { pos:'這個格子周圍的打勾數是奇數', neg:'這個格子周圍的打勾數是偶數',
+      eval:(ctx,r,c)=> (ctx.nb[r][c]%2===1) },
+
+    { pos:'至少存在一整列全部打勾', neg:'不存在一整列全部打勾',
+      eval:(ctx)=> ctx.fullRowChecked },
+    { pos:'至少存在一整行全部打勾', neg:'不存在一整行全部打勾',
+      eval:(ctx)=> ctx.fullColChecked },
+    { pos:'存在一條對角線全部打勾', neg:'不存在任何對角線全部打勾',
+      eval:(ctx)=> ctx.mainAll || ctx.antiAll },
+
+    { pos:'至少存在一整列全部不勾', neg:'不存在一整列全部不勾',
+      eval:(ctx)=> ctx.fullRowUnchecked },
+    { pos:'至少存在一整行全部不勾', neg:'不存在一整行全部不勾',
+      eval:(ctx)=> ctx.fullColUnchecked },
+    { pos:'存在一條對角線全部不勾', neg:'不存在任何對角線全部不勾',
+      eval:(ctx)=> ctx.mainZero || ctx.antiZero },
+
+    { pos:'四個角的打勾數是奇數', neg:'四個角的打勾數是偶數',
+      eval:(ctx)=> (ctx.corners%2===1) },
+    { pos:'四個角的打勾數≧3', neg:'四個角的打勾數≦2',
+      eval:(ctx)=> (ctx.corners>=3) },
+
+    { pos:'整張表打勾的格子數是奇數', neg:'整張表打勾的格子數是偶數',
+      eval:(ctx)=> (ctx.total%2===1) },
+
+    { pos:'存在一個 2×2 四宮格全部打勾', neg:'不存在 2×2 四宮格全部打勾',
+      eval:(ctx)=> ctx.ex2x2AllChecked },
+    { pos:'存在一個 2×2 四宮格全部不勾', neg:'不存在 2×2 四宮格全部不勾',
+      eval:(ctx)=> ctx.ex2x2AllUnchecked },
+
+    { pos:'存在上下相鄰且均被打勾的兩個格子', neg:'不存在上下相鄰且均被打勾的兩個格子',
+      eval:(ctx)=> ctx.vertAdjBothChecked },
+    { pos:'存在上下相鄰且均不打勾的兩個格子', neg:'不存在上下相鄰且均不打勾的兩個格子',
+      eval:(ctx)=> ctx.vertAdjBothUnchecked },
+
+    { pos:'這一格所在列的打勾數量<所在行', neg:'這一格所在列的打勾數量≧所在行',
+      eval:(ctx,r,c)=> ctx.rows[r] < ctx.cols[c] },
+    { pos:'這一格所在列的打勾數量>所在行', neg:'這一格所在列的打勾數量≦所在行',
+      eval:(ctx,r,c)=> ctx.rows[r] > ctx.cols[c] },
+
+    { pos:`整張表打勾的格子數≧${GT}`, neg:`整張表打勾的格子數≦${GT-1}`,
+      eval:(ctx)=> (ctx.total >= GT) },
+
+    /* 你的新增：四向皆勾 / 皆不勾、鄰居數門檻 */
+    { pos:'存在上下左右均被打勾的格子', neg:'不存在上下左右均被打勾的格子',
+      eval:(ctx)=> ctx.orthAllChecked },
+    { pos:'存在上下左右均不打勾的格子', neg:'不存在上下左右均不打勾的格子',
+      eval:(ctx)=> ctx.orthAllUnchecked },
+    { pos:'存在周圍打勾數量 ≥ 6 的格子', neg:'不存在周圍打勾數量 ≥ 6 的格子',
+      eval:(ctx)=> (ctx.nbMax >= 6) },
+    { pos:'存在周圍打勾數量 ≤ 2 的格子', neg:'不存在周圍打勾數量 ≤ 2 的格子',
+      eval:(ctx)=> (ctx.nbMin <= 2) },
+
+    /* 你的新增：打勾連線數量（行/列/對角線滿線） */
+    { pos:'打勾連線數量至少2', neg:'打勾連線數量不超過1',
+      eval:(ctx)=> (ctx.linesChecked >= 2) },
+    { pos:'存在至少1條打勾連線', neg:'不存在任何打勾連線',
+      eval:(ctx)=> (ctx.linesChecked >= 1) },
+  ];
+
+  // 中心（奇 N：單中心；偶 N：中心 2×2 至少一格）
+  if(N%2===1){
+    const mid=Math.floor(N/2);
+    base.push({ pos:'中心格被打勾', neg:'中心格沒有被打勾',
+      eval:(ctx)=> (ctx.sumRect(mid,mid,1,1)===1) });
+  }else{
+    base.push({ pos:'中心四格中至少一格被打勾', neg:'中心四格中沒有任何格被打勾',
+      eval:(ctx)=> (ctx.sumRect(N/2-1,N/2-1,2,2) >= 1) });
+  }
+
+  // 四角 2×2（僅 N≥3）
+  if(hasQuadrantRules(N)){
+    base.push(
+      { pos:'左上四格的打勾數量≧2', neg:'左上四格的打勾數量<2', eval:(ctx)=> ctx.sumRect(0,0,2,2)>=2 },
+      { pos:'右上四格的打勾數量≧2', neg:'右上四格的打勾數量<2', eval:(ctx)=> ctx.sumRect(0,N-2,2,2)>=2 },
+      { pos:'左下四格的打勾數量≧2', neg:'左下四格的打勾數量<2', eval:(ctx)=> ctx.sumRect(N-2,0,2,2)>=2 },
+      { pos:'右下四格的打勾數量≧2', neg:'右下四格的打勾數量<2', eval:(ctx)=> ctx.sumRect(N-2,N-2,2,2)>=2 },
+    );
+  }
+
+  // 四角九宮格（僅 N≥4）
+  if(N>=4){
+    base.push(
+      { pos:'左上九宮格的打勾數量≧5', neg:'左上九宮格的打勾數量≦4', eval:(ctx)=> ctx.sumRect(0,0,3,3) >= 5 },
+      { pos:'右上九宮格的打勾數量≧5', neg:'右上九宮格的打勾數量≦4', eval:(ctx)=> ctx.sumRect(0,N-3,3,3) >= 5 },
+      { pos:'左下九宮格的打勾數量≧5', neg:'左下九宮格的打勾數量≦4', eval:(ctx)=> ctx.sumRect(N-3,0,3,3) >= 5 },
+      { pos:'右下九宮格的打勾數量≧5', neg:'右下九宮格的打勾數量≦4', eval:(ctx)=> ctx.sumRect(N-3,N-3,3,3) >= 5 },
+    );
+  }
+
+  return base;
+}
+
+function buildLineDescs(N){
+  const T = lineThreshold(N);
+  const list = [];
+  for(let j=1;j<=N;j++){
+    list.push({
+      pos:`第${j}行的打勾數≧${T}`,
+      neg:`第${j}行的打勾數≦${T-1}`,
+      eval:(ctx)=> (ctx.cols[j-1] >= T)   // 行＝直（column j）
+    });
+  }
+  for(let i=1;i<=N;i++){
+    list.push({
+      pos:`第${i}列的打勾數≧${T}`,
+      neg:`第${i}列的打勾數≦${T-1}`,
+      eval:(ctx)=> (ctx.rows[i-1] >= T)   // 列＝橫（row i）
+    });
+  }
+  return list;
+}
+
+/* ============ 新題：答案 + 描述 + 分派（盡量不同） ============ */
+function chooseAnswerRange(N){
+  if(N===2) return [1,3];
+  if(N===3) return [3,6];
+  if(N===4) return [5,11];
+  if(N===5) return [7,18];
+  const cells=N*N; return [Math.ceil(0.35*cells), Math.floor(0.65*cells)];
+}
+function newPuzzle(){
+  // 1) 答案（依你指定的區間）
+  answer = makeEmpty(N);
+  const [minC,maxC] = chooseAnswerRange(N);
+  const target = randInt(minC, maxC);
+  const positions = Array.from({length:N*N},(_,i)=>i); shuffle(positions);
+  for(let k=0;k<target;k++){ const idx=positions[k]; answer[Math.floor(idx/N)][idx%N]=1; }
+
+  // 2) 描述庫
+  ACTIVE_DESCS = getBaseDescs(N).concat(buildLineDescs(N));
+
+  // 3) 分派（盡量不同：先用完一輪再重洗）
+  ANSWER_CTX = buildContext(answer);
+  rules = assignRoundRobinRules(ACTIVE_DESCS, ANSWER_CTX);
+
+  // 4) 初始化玩家盤面
+  board = makeEmpty(N);
+  showSolution = false;
+  document.getElementById('btn-solution').textContent = '顯示解答';
+  totalEl.textContent = String(N*N);
+
+  // 5) 繪製（一次寫入描述；縮字只在此處做）
+  renderBoardSkeleton();
+  render();
+  fitAllDescriptions();
+}
+
+/* 盡量不同：把 DESCS 亂序後依序指派，用完一輪再重洗。用答案快取來決定正/反。 */
+function assignRoundRobinRules(DESCS, answerCtx){
+  const order = Array.from({length:DESCS.length},(_,i)=>i); shuffle(order);
+  let ptr=0;
+  const tmp = makeEmpty(N);
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(ptr>=order.length){ shuffle(order); ptr=0; }
+      const idx=order[ptr++], d=DESCS[idx];
+      const truthOnAnswer = !!d.eval(answerCtx, r, c);
+      const wantTrue = (answer[r][c]===CHECK);
+      tmp[r][c] = { idx, negate: (truthOnAnswer !== wantTrue) };
+    }
+  }
+  return tmp;
+}
+
+/* ============ 渲染（每次 O(N^2)，條件判斷用快取 ctx） ============ */
+function computeTruthOnCurrent(r,c){
+  const rule = rules[r][c]; if(!rule) return false;
+  const d = ACTIVE_DESCS[rule.idx];
+  const base = !!d.eval(BOARD_CTX, r, c);
+  return rule.negate ? !base : base;
+}
+
+function render(){
+  BOARD_CTX = buildContext(board);
+  cntEl.textContent = String(BOARD_CTX.total);
+  let allSatisfied=true;
+
+  document.querySelectorAll('.cell').forEach(cell=>{
+    const r=+cell.dataset.r, c=+cell.dataset.c;
+    const markEl=cell.querySelector('[data-mark]');
+    const solEl = cell.querySelector('[data-sol]');
+
+    const state=board[r][c];
+    markEl.textContent = state===CHECK ? '✅' : (state===CROSS ? '❌' : '　');
+
+    solEl.style.display = (showSolution && answer[r][c]===CHECK) ? 'block' : 'none';
+
+    const truth = computeTruthOnCurrent(r,c);
+    const satisfied = (state===CHECK)===truth;
+    cell.classList.toggle('ok',satisfied);
+    cell.classList.toggle('bad',!satisfied);
+    if(!satisfied) allSatisfied=false;
+  });
+
+  solvedEl.classList.toggle('show',allSatisfied);
+}
+
+function advance(r,c){
+  board[r][c]=(board[r][c]+1)%3;
+  render(); // 不縮字
+}
+
+/* ============ UI ============ */
+function renderBoardSkeleton(){
+  boardEl.style.gridTemplateColumns = `repeat(${N},1fr)`;
+  boardEl.innerHTML='';
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const cell=document.createElement('div');
+      cell.className='cell'; cell.tabIndex=0;
+      cell.dataset.r=r; cell.dataset.c=c;
+
+      const rule = rules[r][c];
+      const d = ACTIVE_DESCS[rule.idx];
+      const text = rule.negate ? d.neg : d.pos;
+
+      cell.innerHTML = `
+        <div class="desc">${text}</div>
+        <div class="mark" data-mark>　</div>
+        <div class="sol" data-sol>✓</div>
+      `;
+      cell.addEventListener('click',()=>advance(r,c));
+      cell.addEventListener('keydown',(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); advance(r,c); }});
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  board = makeEmpty(N);
+  render();
+});
+document.getElementById('btn-new').addEventListener('click',()=> newPuzzle());
+btnSolution.addEventListener('click',()=>{
+  showSolution = !showSolution;
+  btnSolution.textContent = showSolution ? '隱藏解答' : '顯示解答';
+  render();
+});
+sizeSel.addEventListener('change',()=>{
+  N = parseInt(sizeSel.value,10);
+  board = makeEmpty(N); answer = makeEmpty(N); rules = makeEmpty(N);
+  newPuzzle();
+});
+
+/* ============ 小工具（縮字只在新題/改尺寸/視窗改變時觸發） ============ */
+function makeEmpty(n){ return Array.from({length:n},()=>Array.from({length:n},()=>BLANK)); }
+function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } }
+const MIN_FONT_PX=9;
+function fitDescriptionForCell(cell){
+  const desc=cell.querySelector('.desc'); const mark=cell.querySelector('.mark'); if(!desc||!mark)return;
+  const cellStyle=getComputedStyle(cell);
+  const padTop=parseFloat(cellStyle.paddingTop)||0, padBottom=parseFloat(cellStyle.paddingBottom)||0, rowGap=parseFloat(cellStyle.rowGap)||6;
+  const available = cell.clientHeight - padTop - padBottom - mark.offsetHeight - rowGap*1.2;
+  if(available<=0) return;
+  const start=Math.max(parseFloat(getComputedStyle(desc).fontSize)||14,12);
+  let hi=start, lo=MIN_FONT_PX; desc.style.maxHeight=available+'px'; desc.style.fontSize=hi+'px';
+  let guard=0; while(desc.scrollHeight>available && hi>lo && guard++<8){ hi=Math.max(lo,hi-2); desc.style.fontSize=hi+'px'; }
+  for(let i=0;i<16;i++){ if(desc.scrollHeight<=available) break; const mid=(hi+lo)/2; hi=mid; desc.style.fontSize=hi+'px'; }
+  if(desc.scrollHeight>available) desc.style.fontSize=lo+'px';
+}
+function fitAllDescriptions(){ document.querySelectorAll('.cell').forEach(fitDescriptionForCell); }
+window.addEventListener('resize',()=>requestAnimationFrame(fitAllDescriptions));
+window.addEventListener('orientationchange',()=>setTimeout(fitAllDescriptions,150));
+
+/* ============ 啟動 ============ */
+renderBoardSkeleton();
+newPuzzle(); // 預設 4×4
+</script>
+</body>
+</html>
