@@ -356,6 +356,31 @@
     .cell .mark.cross::before, .cell .mark.cross::after{ background:var(--red) }   /* ✕ 叉叉＝紅 */
     .cell.ok .mark.cross::before, .cell.ok .mark.cross::after{ background:var(--red) }
 
+    /* ===== 取消綠色：改用包浩斯原色（紅／黃／藍）＋黑白；圓圈統一藍 ===== */
+    :root{ --ok-fill:var(--yellow); --ok-fg:#141310 }
+    :root[data-theme="dark"]{ --ok-fill:var(--yellow); --ok-fg:#141310 }
+    .cell.ok{ background:var(--yellow); color:#141310; border-color:var(--line) }
+    .cell::after{ background:var(--red) }        /* 未符合＝底部紅條 */
+    .cell.ok::after{ background:var(--blue) }     /* 符合＝底部藍條 */
+    .cell .mark.check{ border-color:var(--blue) }            /* ○ 一律藍 */
+    .cell.ok .mark.check{ border-color:var(--blue) }
+    .cell .mark.cross::before,.cell .mark.cross::after{ background:var(--red) }   /* ✕ 一律紅 */
+    .cell.ok .mark.cross::before,.cell.ok .mark.cross::after{ background:var(--red) }
+    .progress > i{ background:var(--blue) }
+    .pill.win{ background:var(--yellow); color:#141310; border-color:var(--line) }
+    .winbar, .winbar h3{ color:#141310 }
+    /* 經典模式色塊改黑（原色＋黑白）＋黃三角 */
+    .bigmode.mc{ background:#141310; color:#fdfaf1 }
+    .bigmode.mc .bm-shape{ border-bottom-color:var(--yellow) }
+    /* 說明示意：符合＝黃、未符合＝白底紅底線 */
+    .demo i.g{ background:var(--yellow); border-color:var(--line) }
+    .demo i.r{ background:var(--surface); border-color:var(--line); border-bottom:4px solid var(--red) }
+
+    /* 掃尾：殘餘綠色改為原色 */
+    .cell .sol{ color:var(--red) }               /* 顯示解答的勾記＝紅 */
+    .rule:nth-of-type(4) .ic{ background:var(--blue) }
+    .mode-card.done .mode-name::after{ color:var(--blue) }
+
   </style>
 </head>
 <body>
@@ -373,7 +398,7 @@
         <span class="hs hs-circle" aria-hidden="true"></span>
         <span class="hs hs-sq" aria-hidden="true"></span>
         <span class="hs hs-tri" aria-hidden="true"></span>
-        <h1>用邏輯<br>把整張表<br>點成一片綠</h1>
+        <h1>用邏輯<br>把整張表<br>全部點亮</h1>
         <p>每格一句敘述，切換打勾／留白，讓真假自圓其說。</p>
       </div>
       <div class="bauhaus-bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
@@ -436,7 +461,7 @@
 
       <div class="winbar" id="winbar">
         <h3 id="win-title">通關！</h3>
-        <p id="win-msg">所有格子的「是否打勾」都與敘述一致，全部變綠。</p>
+        <p id="win-msg">所有格子的「是否打勾」都與敘述一致，全部點亮。</p>
         <div class="row" style="justify-content:center; gap:10px" id="win-actions"></div>
       </div>
 
@@ -453,9 +478,9 @@
       <button class="btn icon sheet-close" data-close aria-label="關閉">✕</button>
       <h2>遊戲說明</h2>
       <p class="lead">邏輯賓果是一種「自我指涉」謎題：每格的敘述是否成立，取決於整張盤面現在的樣子；而盤面又由你決定。目標是讓所有格子同時自圓其說。</p>
-      <div class="rule"><div class="ic">🎯</div><div><h4>目標</h4><p>讓棋盤上<b>每一格都變綠</b>。綠色代表「這格有沒有打勾」與「它的敘述在目前盤面是否為真」一致。全綠即通關。</p></div></div>
+      <div class="rule"><div class="ic">🎯</div><div><h4>目標</h4><p>讓棋盤上<b>每一格都點亮（變黃）</b>。黃色代表「這格有沒有打勾」與「它的敘述在目前盤面是否為真」一致，全部變黃即通關。</p></div></div>
       <div class="rule"><div class="ic">👆</div><div><h4>操作</h4><p>點一下格子循環切換：<b>空白 → ○（圈圈）→ ✕（叉叉）</b>。<b>圈圈＝打勾</b>；空白與叉叉都算「沒打勾」（叉叉只是讓你標記「我確定這裡不勾」的記號）。鍵盤可用 <span class="kbd">Enter</span> 或 <span class="kbd">空白鍵</span>。</p></div></div>
-      <div class="rule"><div class="ic">🚦</div><div><h4>綠與紅</h4><p>敘述成立且你有打勾 → 綠；敘述不成立且你沒打勾 → 綠。兩者不一致 → 紅框。符合的格右上角有<b>綠色圓形</b>、不符合則是<b>紅色三角形</b>標記。<span class="demo"><i class="g on"></i><i class="g"></i><i class="r on"></i></span></p></div></div>
+      <div class="rule"><div class="ic">🚦</div><div><h4>顏色判定</h4><p>敘述成立且你有打勾 → 該格<b>變黃</b>；敘述不成立且你沒打勾 → 也<b>變黃</b>。兩者不一致 → 維持白底、<b>底部紅條</b>。<span class="demo"><i class="g on"></i><i class="g"></i><i class="r on"></i></span></p></div></div>
       <div class="rule"><div class="ic">🎲</div><div><h4>隨機挑戰</h4><p>「產生新題」會<b>先隨機生成一個答案，再據此指派每格敘述</b>，所以每一題都保證至少有一組解。卡住時可按「顯示解答」看提示。</p></div></div>
       <div class="rule"><div class="ic">🧭</div><div><h4>名詞約定</h4><p>本遊戲一律 <b>行＝直（column，↕）</b>、<b>列＝橫（row，↔）</b>；周圍＝該格周圍的 8 宮格（不含自身，邊角格較少）。</p></div></div>
       <div class="rule"><div class="ic">💡</div><div><h4>小訣竅</h4><p>先鎖定「一定成立 / 一定不成立」的格子，再處理數量條件——每多打一個勾都會牽動總數。卡住時按 <b>提示</b> 讓紅格閃一下。</p></div></div>
@@ -712,7 +737,7 @@
     const T_=()=>true, F_=()=>false;
     const TUTORIALS=[
       { name:'教學 1', sub:'認識規則', N:2,
-        tip:'<b>怎麼玩：</b>點格子在 空白→○圈圈→✕叉叉 之間切換。讓每一格「有沒有打勾」符合它寫的敘述，四格全變綠就過關！先試試「一定要打勾」和「一定要留白」的兩格。',
+        tip:'<b>怎麼玩：</b>點格子在 空白→○圈圈→✕叉叉 之間切換。讓每一格「有沒有打勾」符合它寫的敘述，四格全部變黃就過關！先試試「一定要打勾」和「一定要留白」的兩格。',
         cells:[
           {desc:'這一格一定要打勾', truth:T_},
           {desc:'這一格一定要留白', truth:F_},
@@ -992,12 +1017,12 @@
       const mk=(txt,fn,cls)=>{ const b=document.createElement('button'); b.className='btn'+(cls?' '+cls:''); b.textContent=txt; b.addEventListener('click',fn); acts.appendChild(b); };
       if(mode==='generate'){
         $('win-title').textContent='解開了！';
-        $('win-msg').textContent='這一題全部變綠。要不要再來一題？';
+        $('win-msg').textContent='這一題全部點亮！要不要再來一題？';
         mk('再來一題', newPuzzle, 'primary');
         mk('回選單', goHome);
       }else if(mode==='fixed'){
         $('win-title').textContent='解開了！';
-        $('win-msg').textContent='你解開了經典 5×5 謎題，全部變綠！';
+        $('win-msg').textContent='你解開了經典 5×5 謎題，全部點亮！';
         mk('回選單', goHome, 'primary');
       }else{
         $('win-title').textContent='通關！';
@@ -1046,7 +1071,7 @@
       return '其他';
     }
     const CAT_ORDER=['數量類','行列類','連線・幾何類','角落・區域類','鄰居類','其他'];
-    const CAT_COLOR={'數量類':'#6366f1','行列類':'#0ea5e9','連線・幾何類':'#10b981','角落・區域類':'#f59e0b','鄰居類':'#ec4899','其他':'#94a3b8'};
+    const CAT_COLOR={'數量類':'#123FE0','行列類':'#E5231B','連線・幾何類':'#FFC400','角落・區域類':'#141310','鄰居類':'#FBF8EF','其他':'#94a3b8'};
     const EX_N=4;
     function combosIdx(nbits,k){ const res=[]; (function rec(start,cur){ if(cur.length===k){res.push(cur.slice());return;} for(let i=start;i<nbits;i++){cur.push(i);rec(i+1,cur);cur.pop();} })(0,[]); return res; }
     /* 用規則本身的 eval 暴力搜出「最少打勾、剛好成立」的示範盤面（與遊戲判定完全一致） */
@@ -1149,7 +1174,7 @@
 
     /* ---- 慶祝彩帶 ---- */
     function confetti(){
-      const box=$('confetti'); const colors=['#2853a6','#e0401e','#f4b70a','#1f9d57','#161512'];
+      const box=$('confetti'); const colors=['#123FE0','#E5231B','#FFC400','#141310','#8a8378'];
       for(let i=0;i<64;i++){
         const b=document.createElement('span'); b.className='confetti-bit';
         b.style.left=Math.random()*100+'vw'; b.style.background=colors[i%colors.length];
