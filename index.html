@@ -293,6 +293,22 @@
     .ex-legend .sw.on{ background:var(--blue) }
     .ex-legend .sw.hl{ outline:2.5px solid var(--red); outline-offset:1px; background:var(--surface) }
 
+    /* ================= 大膽包浩斯盤面：全新配色 ================= */
+    :root{ --ok-fill:#159447; --ok-fg:#fdfaf1; --cell-line:#141310 }
+    :root[data-theme="dark"]{ --ok-fill:#178a45; --ok-fg:#f7f2e6 }
+    .board{ gap:9px }
+    .cell{ border-width:3px; border-color:var(--line); border-radius:0; background:var(--surface); color:var(--ink); box-shadow:none }
+    .cell .desc{ color:inherit }
+    .cell.ok{ background:var(--ok-fill); color:var(--ok-fg); border-color:var(--line); border-style:solid }
+    .cell.bad{ background:var(--surface); color:var(--ink); border-color:var(--line); border-style:solid }
+    /* 狀態角旗：未符合＝右上紅色三角（符合＝乾淨綠塊，無干擾） */
+    .cell .corner{ display:none }
+    .cell.bad .corner{ display:block; top:0; right:0; width:0; height:0; padding:0; border-radius:0; background:transparent; border-top:16px solid var(--red); border-left:16px solid transparent }
+    /* 標記在綠塊上轉為米白（○ 圈圈／✕ 叉叉） */
+    .cell.ok .mark.check{ border-color:var(--ok-fg) }
+    .cell.ok .mark.cross::before, .cell.ok .mark.cross::after{ background:var(--ok-fg) }
+    /* 通關浮層也用綠塊語彙 */
+
   </style>
 </head>
 <body>
@@ -917,15 +933,19 @@
       }
       N=savedN; return found;
     }
-    /* 找出「讓敘述成立的關鍵格」以便在圖示上標出（形狀／相鄰／整行列／角落…） */
-    function structureCells(pos,g,n){
+    /* 找出「讓敘述成立的關鍵格」以便在圖示上標出（形狀／相鄰／整行列／角落／鄰居…） */
+    function structureCells(pos,g,n,focus){
       const on=(r,c)=>g[r][c]===CHECK; const R=[]; const push=(r,c)=>{ if(r>=0&&r<n&&c>=0&&c<n) R.push(r*n+c); };
-      const wantChecked=!(/不勾/.test(pos)); let m;
+      const wantChecked=!(/不打?勾/.test(pos)); let m;
+      const nbc=(r,c)=>{let s=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const rr=r+dr,cc=c+dc;if(rr>=0&&rr<n&&cc>=0&&cc<n&&on(rr,cc))s++;}return s;};
       if(/連線/.test(pos)){ for(let r=0;r<n;r++){let k=0;for(let c=0;c<n;c++)if(on(r,c))k++; if(k===n)for(let c=0;c<n;c++)push(r,c);} for(let c=0;c<n;c++){let k=0;for(let r=0;r<n;r++)if(on(r,c))k++; if(k===n)for(let r=0;r<n;r++)push(r,c);} let a=true,b=true;for(let i=0;i<n;i++){if(!on(i,i))a=false;if(!on(i,n-1-i))b=false;} if(a)for(let i=0;i<n;i++)push(i,i); if(b)for(let i=0;i<n;i++)push(i,n-1-i); return R; }
       if(/整列/.test(pos)){ const t=wantChecked?n:0; for(let r=0;r<n;r++){let k=0;for(let c=0;c<n;c++)if(on(r,c))k++; if(k===t){for(let c=0;c<n;c++)push(r,c);return R;}} }
       if(/整行/.test(pos)){ const t=wantChecked?n:0; for(let c=0;c<n;c++){let k=0;for(let r=0;r<n;r++)if(on(r,c))k++; if(k===t){for(let r=0;r<n;r++)push(r,c);return R;}} }
+      if(/直行/.test(pos)){ let bc=0,bk=-1; for(let c=0;c<n;c++){let k=0;for(let r=0;r<n;r++)if(on(r,c))k++; if(k>bk){bk=k;bc=c;}} for(let r=0;r<n;r++)push(r,bc); return R; }
+      if(/橫列/.test(pos)){ let br=0,bk=-1; for(let r=0;r<n;r++){let k=0;for(let c=0;c<n;c++)if(on(r,c))k++; if(k>bk){bk=k;br=r;}} for(let c=0;c<n;c++)push(br,c); return R; }
       if(m=pos.match(/第(\d+)行/)){ const c=+m[1]-1; for(let r=0;r<n;r++)push(r,c); return R; }
       if(m=pos.match(/第(\d+)列/)){ const r=+m[1]-1; for(let c=0;c<n;c++)push(r,c); return R; }
+      if(/所在列|所在行/.test(pos)){ if(focus){ const fr=focus[0],fc=focus[1]; for(let c=0;c<n;c++)push(fr,c); for(let r=0;r<n;r++)push(r,fc); } return R; }
       if(/對角線/.test(pos)){ let a=true,b=true; for(let i=0;i<n;i++){const x=on(i,i),y=on(i,n-1-i); if(wantChecked){if(!x)a=false;if(!y)b=false;}else{if(x)a=false;if(y)b=false;}} if(a){for(let i=0;i<n;i++)push(i,i);return R;} if(b){for(let i=0;i<n;i++)push(i,n-1-i);return R;} }
       if(/2×2/.test(pos)){ const t=wantChecked?4:0; for(let r=0;r<n-1;r++)for(let c=0;c<n-1;c++){const s=on(r,c)+on(r,c+1)+on(r+1,c)+on(r+1,c+1); if(s===t){push(r,c);push(r,c+1);push(r+1,c);push(r+1,c+1);return R;}} }
       if(/上下相鄰/.test(pos)){ for(let r=0;r<n-1;r++)for(let c=0;c<n;c++){const x=on(r,c),y=on(r+1,c); if(wantChecked?(x&&y):(!x&&!y)){push(r,c);push(r+1,c);return R;}} }
@@ -934,12 +954,13 @@
       if(/九宮格/.test(pos)){ const r0=/上/.test(pos)?0:n-3, c0=/左/.test(pos)?0:n-3; for(let r=r0;r<r0+3;r++)for(let c=c0;c<c0+3;c++)push(r,c); return R; }
       if(/四格/.test(pos)&&/(左上|右上|左下|右下)/.test(pos)){ const r0=/上/.test(pos)?0:n-2, c0=/左/.test(pos)?0:n-2; for(let r=r0;r<r0+2;r++)for(let c=c0;c<c0+2;c++)push(r,c); return R; }
       if(/中心/.test(pos)){ if(n%2){push((n-1)/2,(n-1)/2);}else{const mm=n/2;push(mm-1,mm-1);push(mm-1,mm);push(mm,mm-1);push(mm,mm);} return R; }
-      if(/周圍/.test(pos)){ const nbc=(r,c)=>{let s=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const rr=r+dr,cc=c+dc;if(rr>=0&&rr<n&&cc>=0&&cc<n&&on(rr,cc))s++;}return s;}; let best=null; for(let r=0;r<n&&!best;r++)for(let c=0;c<n&&!best;c++){const v=nbc(r,c); if(/≥\s*6/.test(pos)&&v>=6)best=[r,c]; else if(/≤\s*2/.test(pos)&&v<=2)best=[r,c];} if(best){push(best[0],best[1]); return R;} }
+      if(/周圍/.test(pos)){ let best=null; if(/≥\s*6/.test(pos)){for(let r=0;r<n&&!best;r++)for(let c=0;c<n&&!best;c++)if(nbc(r,c)>=6)best=[r,c];} else if(/≤\s*2/.test(pos)){for(let r=0;r<n&&!best;r++)for(let c=0;c<n&&!best;c++)if(nbc(r,c)<=2)best=[r,c];} if(!best&&focus)best=focus; if(best){const br=best[0],bc=best[1]; push(br,bc); for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue; push(br+dr,bc+dc);}} return R; }
+      if(/整張表/.test(pos)){ for(let r=0;r<n;r++)for(let c=0;c<n;c++) if(on(r,c)) push(r,c); return R; }
       return R;
     }
     function miniHTML(rule,demo,n){
       if(!demo) return '<div class="mini mini-none">—</div>';
-      let hl=structureCells(rule.pos, demo.grid, n);
+      let hl=structureCells(rule.pos, demo.grid, n, demo.focus);
       if(!hl.length && demo.focus) hl=[demo.focus[0]*n+demo.focus[1]];
       const hset=new Set(hl);
       let s=`<div class="mini" style="--mn:${n}">`;
