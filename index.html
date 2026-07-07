@@ -309,6 +309,26 @@
     .cell.ok .mark.cross::before, .cell.ok .mark.cross::after{ background:var(--ok-fg) }
     /* 通關浮層也用綠塊語彙 */
 
+    /* ============ 盤面重新設計：圖案一律置於文字底下（z 層 / 位置皆在下方） ============ */
+    :root{ --bar-todo:#E5231B; --bar-done:#FFC400 }
+    :root[data-theme="dark"]{ --bar-todo:#FF4632; --bar-done:#FFD22E }
+    .cell{ position:relative; overflow:hidden; padding:8px 8px 13px; border-width:3px; border-color:var(--line); border-radius:0 }
+    /* 底紋：四分之一圓，同色系低透明度，z:0（最底層） */
+    .cell::before{ content:""; position:absolute; z-index:0; right:0; bottom:0; width:58%; height:58%; background:currentColor; opacity:.07; border-top-left-radius:100% }
+    /* 狀態色條：貼齊底邊，z:1（仍在文字之下） */
+    .cell::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:9px; z-index:1; background:var(--bar-todo) }
+    .cell.ok::after{ background:var(--bar-done) }
+    .cell.bad::after{ background:var(--bar-todo) }
+    /* 文字與標記永遠在最上層，圖案不會擋到 */
+    .cell .desc{ position:relative; z-index:2; color:inherit }
+    .cell .mark{ position:relative; z-index:2 }
+    .cell .sol{ z-index:2 }
+    /* 移除會碰到文字的角旗（狀態改由底色＋色條表示） */
+    .cell .corner{ display:none !important }
+    /* 完成＝實心綠、文字轉米白；未完成＝米白 */
+    .cell.ok{ background:var(--ok-fill); color:var(--ok-fg); border-color:var(--line) }
+    .cell.bad{ background:var(--surface); color:var(--ink); border-color:var(--line); border-style:solid }
+
   </style>
 </head>
 <body>
