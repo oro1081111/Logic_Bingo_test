@@ -329,6 +329,33 @@
     .cell.ok{ background:var(--ok-fill); color:var(--ok-fg); border-color:var(--line) }
     .cell.bad{ background:var(--surface); color:var(--ink); border-color:var(--line); border-style:solid }
 
+    /* ===== 通關改為非阻擋的行內橫幅（不蓋住盤面），並可關閉 ===== */
+    .winbar{ position:static; left:auto; top:auto; transform:none; width:auto; margin:12px 0 0; z-index:auto; padding:14px 16px }
+    .winbar.show{ display:block; animation:viewIn .3s ease }
+    #win-actions{ flex-wrap:wrap }
+
+    /* ===== 第三個模式：經典（深綠塊＋黃三角）＋桌機三欄 ===== */
+    .bigmode.mc{ background:#0E7C46 }
+    .bigmode.mc .bm-shape{ right:-16px; bottom:-26px; width:0; height:0; border-left:54px solid transparent; border-right:54px solid transparent; border-bottom:90px solid var(--yellow) }
+    @media (min-width:560px){ .bigmodes{ grid-template-columns:repeat(3,1fr) } }
+
+    /* ===== 範例圖示與盤面同語彙：打勾＝○ 圈圈、關鍵格＝紅框 ===== */
+    .mini i{ position:relative; background:var(--surface) }
+    .mini i.on{ background:var(--surface) }
+    .mini i.on::before{ content:""; position:absolute; inset:22%; border-radius:50%; border:2px solid var(--blue); box-sizing:border-box }
+    .mini i.hl{ outline:3px solid var(--red); outline-offset:-1px; z-index:1 }
+    .ex-legend .sw{ position:relative }
+    .ex-legend .sw.on{ background:var(--surface) }
+    .ex-legend .sw.on::before{ content:""; position:absolute; inset:16%; border-radius:50%; border:2px solid var(--blue); box-sizing:border-box }
+
+    /* ===== 盤面：縮小內距與標記，長文字更好塞；圈圈/叉叉明顯配色 ===== */
+    .cell{ padding:6px 6px 7px; row-gap:3px }
+    .cell .mark{ width:clamp(13px,3.8vw,22px); height:clamp(13px,3.8vw,22px) }
+    .cell .mark.check{ border-color:var(--blue) }           /* ○ 圈圈＝藍 */
+    .cell.ok .mark.check{ border-color:var(--ok-fg) }        /* 綠塊上為米白 */
+    .cell .mark.cross::before, .cell .mark.cross::after{ background:var(--red) }   /* ✕ 叉叉＝紅 */
+    .cell.ok .mark.cross::before, .cell.ok .mark.cross::after{ background:var(--red) }
+
   </style>
 </head>
 <body>
@@ -363,6 +390,12 @@
           <div class="bm-s">4 個漸進小關：規則、數量、行列、圖形與鄰居。</div>
           <div class="bm-go">開始學習 →</div>
         </button>
+        <button class="bigmode mc" id="card-classic">
+          <span class="bm-shape" aria-hidden="true"></span>
+          <div class="bm-t">經典挑戰</div>
+          <div class="bm-s">原始 Logic_Bingo 的 5×5 經典謎題，固定題目、可看解答。</div>
+          <div class="bm-go">開始挑戰 →</div>
+        </button>
       </div>
       <div class="credits">
         點格子切換 <b>空白 → ○ 圈圈 → ✕ 叉叉</b>（圈圈＝打勾；空白與叉叉皆視為「未打勾」）。<br>
@@ -377,6 +410,7 @@
         <button class="btn icon" id="game-back" aria-label="返回">←</button>
         <div class="game-title" id="game-title">關卡<small id="game-sub">—</small></div>
         <div class="spacer"></div>
+        <button class="btn tb" id="game-ex">範例</button>
         <button class="btn tb" id="game-help">說明</button>
         <button class="btn tb icon" id="game-theme" aria-label="切換主題"><span class="ico-theme" aria-hidden="true"></span></button>
       </div>
@@ -435,7 +469,7 @@
       <div class="sheet-grip"></div>
       <button class="btn icon sheet-close" data-close aria-label="關閉">✕</button>
       <h2>邏輯敘述範例</h2>
-      <p class="lead">每一條敘述都配上一張「成立時的盤面圖示」（以 4×4 為例）。實心＝已打勾、灰底＝未打勾、紅框＝敘述所指的那一格。</p>
+      <p class="lead">每一條敘述都配上一張「成立時的盤面圖示」（以 4×4 為例）。○ 圈圈＝打勾、灰底＝未打勾、紅框＝敘述所指的關鍵格。</p>
       <div id="examples"></div>
     </div>
   </div>
@@ -672,6 +706,7 @@
     let tutIndex=0;
     let tutSolutionCache={};
     let genSize=4;
+    let winDismissed=false;
 
     /* 教學關卡（用同一套 buildContext ctx 判定，全部已驗證有解） */
     const T_=()=>true, F_=()=>false;
@@ -732,11 +767,43 @@
         ]},
     ];
 
+    /* ---- 經典固定題：直接參考原始 Logic_Bingo 的 5×5（條件與原版逐格一致，已離線驗證有解） ---- */
+    const CLASSIC={ name:'經典挑戰', sub:'原始 Logic_Bingo · 5×5', N:5,
+      tip:'<b>經典題：</b>參考原始 Logic_Bingo 的 5×5 自我指涉謎題（固定不變）。25 格互相牽動，慢慢調整，卡關可按「解答」。',
+      solution:[[1,0,0,1,0],[1,1,1,1,1],[0,1,0,1,0],[0,1,0,0,1],[1,0,0,1,0]],
+      cells:[
+        {desc:'此格要勾不勾都可以（自由格）', truth:()=>board[0][0]===CHECK},
+        {desc:'整張表打勾的格子數 ≤ 12', truth:ctx=>ctx.total<=12},
+        {desc:'第2列打勾格子數量小於第3列', truth:ctx=>ctx.rows[1]<ctx.rows[2]},
+        {desc:'這一格所在列的打勾數量小於所在行', truth:ctx=>ctx.rows[0]<ctx.cols[3]},
+        {desc:'至少存在一整直行全部打勾', truth:ctx=>ctx.fullColChecked},
+        {desc:'這個格子周圍 5 格的打勾數量是奇數', truth:ctx=>ctx.nb[1][0]%2===1},
+        {desc:'整張表打勾的格子數 ≥ 13', truth:ctx=>ctx.total>=13},
+        {desc:'不存在周圍格子均未被打勾的格子', truth:ctx=>ctx.nbMin>0},
+        {desc:'四個角上的格子恰有 2 個打勾', truth:ctx=>ctx.corners===2},
+        {desc:'至少存在一整橫列全部打勾', truth:ctx=>ctx.fullRowChecked},
+        {desc:'中心格被打勾', truth:()=>board[2][2]===CHECK},
+        {desc:'左上角的九宮格有 ≥ 5 個格子打勾', truth:ctx=>ctx.sumRect(0,0,3,3)>=5},
+        {desc:'不存在上下相鄰且均被打勾的兩個格子', truth:ctx=>!ctx.vertAdjBothChecked},
+        {desc:'不存在上下左右皆打勾但自身不勾的格子', truth:()=>{for(let r=1;r<4;r++)for(let c=1;c<4;c++){if(board[r][c]!==CHECK&&board[r-1][c]===CHECK&&board[r+1][c]===CHECK&&board[r][c-1]===CHECK&&board[r][c+1]===CHECK)return false;}return true;}},
+        {desc:'至少存在一條對角線全部打勾', truth:ctx=>ctx.mainAll||ctx.antiAll},
+        {desc:'存在某個格子，其周圍打勾數量 ≥ 7', truth:ctx=>ctx.nbMax>=7},
+        {desc:'這一格所在列的打勾數量小於所在行', truth:ctx=>ctx.rows[3]<ctx.cols[1]},
+        {desc:'存在 2×2 正方形 4 格全打勾', truth:ctx=>ctx.ex2x2AllChecked},
+        {desc:'這個格子周圍 8 格的打勾數量是偶數', truth:ctx=>ctx.nb[3][3]%2===0},
+        {desc:'此格永遠應為打勾', truth:()=>true},
+        {desc:'第5行打勾格子數量 < 3', truth:ctx=>ctx.cols[4]<3},
+        {desc:'第2行打勾格子數量 > 3', truth:ctx=>ctx.cols[1]>3},
+        {desc:'第1行打勾格子數量 > 3', truth:ctx=>ctx.cols[0]>3},
+        {desc:'第3行打勾格子數量在所有行中最小', truth:ctx=>ctx.cols[2]<Math.min(ctx.cols[0],ctx.cols[1],ctx.cols[3],ctx.cols[4])},
+        {desc:'存在一整行或一整列完全沒有被打勾的格子', truth:ctx=>ctx.rows.some(x=>x===0)||ctx.cols.some(x=>x===0)},
+      ]
+    };
+
     /* ---- 目前這格的真值（依模式分派） ---- */
     function currentTruth(r,c){
-      if(mode==='tutorial'){
-        return !!TUTORIALS[tutIndex].cells[r*N+c].truth(BOARD_CTX, r, c);
-      }
+      if(mode==='tutorial') return !!TUTORIALS[tutIndex].cells[r*N+c].truth(BOARD_CTX, r, c);
+      if(mode==='fixed') return !!CLASSIC.cells[r*N+c].truth(BOARD_CTX, r, c);
       return computeTruthOnCurrent(r,c);
     }
 
@@ -752,11 +819,13 @@
     /* ---- 骨架 ---- */
     function renderBoardSkeleton(){
       boardEl.style.setProperty('--n',N);
+      boardEl.style.gap=(N>=5?'5px':N===4?'7px':'9px');
       boardEl.innerHTML='';
       for(let r=0;r<N;r++){
         for(let c=0;c<N;c++){
           let text;
           if(mode==='tutorial'){ text=TUTORIALS[tutIndex].cells[r*N+c].desc; }
+          else if(mode==='fixed'){ text=CLASSIC.cells[r*N+c].desc; }
           else{ const rule=rules[r][c], d=ACTIVE_DESCS[rule.idx]; text=rule.negate?d.neg:d.pos; }
           const cell=document.createElement('div');
           cell.className='cell'; cell.tabIndex=0; cell.dataset.r=r; cell.dataset.c=c; cell.setAttribute('role','button');
@@ -775,7 +844,7 @@
         const mk=cell.querySelector('[data-mark]');
         mk.className='mark '+(st===CHECK?'check':st===CROSS?'cross':'blank'); mk.textContent='';
         const solEl=cell.querySelector('[data-sol]');
-        const solGrid = (mode==='generate') ? answer : tutSolutionCache[tutIndex];
+        const solGrid = (mode==='generate') ? answer : (mode==='fixed') ? CLASSIC.solution : tutSolutionCache[tutIndex];
         solEl.style.display = (showSolution && solGrid && solGrid[r][c]) ? 'block' : 'none';
         const truth=currentTruth(r,c);
         const satisfied=(st===CHECK)===truth;
@@ -791,8 +860,8 @@
       $('progbar').style.width=(okCount/totalCells*100)+'%';
       const solved=okCount===totalCells;
       $('checkpill').classList.toggle('win',solved);
-      if(solved){ if(!$('winbar').classList.contains('show')) onWin(); }
-      else $('winbar').classList.remove('show');
+      if(solved){ if(!winDismissed && !$('winbar').classList.contains('show')) onWin(); }
+      else { $('winbar').classList.remove('show'); winDismissed=false; }
       requestAnimationFrame(fitAllDescriptions);
     }
 
@@ -806,17 +875,37 @@
     boardEl.addEventListener('keydown',e=>{ if(e.key!=='Enter'&&e.key!==' ')return; const el=e.target.closest('.cell'); if(!el)return; e.preventDefault(); advance(+el.dataset.r,+el.dataset.c,el); });
 
     /* ---- 隨機挑戰：產生新題（邏輯同原版） ---- */
+    /* 用目前的 rules/ACTIVE_DESCS 判斷某盤面 g 是否為一組解 */
+    function isSolutionOf(g){
+      const ctx=buildContext(g);
+      for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+        const rule=rules[r][c], d=ACTIVE_DESCS[rule.idx];
+        const truth = rule.negate ? !d.eval(ctx,r,c) : !!d.eval(ctx,r,c);
+        if((g[r][c]===CHECK)!==truth) return false;
+      }
+      return true;
+    }
+    /* 快速驗證：若「完全不打勾」或「只打一個勾」即可解開，視為太簡單 */
+    function tooTrivial(){
+      if(isSolutionOf(makeEmpty(N))) return true;
+      for(let i=0;i<N*N;i++){ const g=makeEmpty(N); g[Math.floor(i/N)][i%N]=CHECK; if(isSolutionOf(g)) return true; }
+      return false;
+    }
     function newPuzzle(){
-      answer = makeEmpty(N);
-      const [minC,maxC] = chooseAnswerRange(N);
-      const target = randInt(minC, maxC);
-      const positions = Array.from({length:N*N},(_,i)=>i); shuffle(positions);
-      for(let k=0;k<target;k++){ const idx=positions[k]; answer[Math.floor(idx/N)][idx%N]=1; }
-      ACTIVE_DESCS = getBaseDescs(N).concat(buildLineDescs(N));
-      ANSWER_CTX = buildContext(answer);
-      rules = assignRoundRobinRules(ACTIVE_DESCS, ANSWER_CTX);
+      let attempts=0;
+      do{
+        answer = makeEmpty(N);
+        const [minC,maxC] = chooseAnswerRange(N);
+        const target = randInt(minC, maxC);
+        const positions = Array.from({length:N*N},(_,i)=>i); shuffle(positions);
+        for(let k=0;k<target;k++){ const idx=positions[k]; answer[Math.floor(idx/N)][idx%N]=1; }
+        ACTIVE_DESCS = getBaseDescs(N).concat(buildLineDescs(N));
+        ANSWER_CTX = buildContext(answer);
+        rules = assignRoundRobinRules(ACTIVE_DESCS, ANSWER_CTX);
+        attempts++;
+      } while(tooTrivial() && attempts<40);
       board = makeEmpty(N);
-      showSolution = false;
+      showSolution = false; winDismissed=false;
       $('winbar').classList.remove('show');
       renderBoardSkeleton();
       render();
@@ -858,11 +947,26 @@
       mode='tutorial'; tutIndex=idx;
       const lv=TUTORIALS[idx]; N=lv.N;
       board=makeEmpty(N);
-      showSolution=false;
+      showSolution=false; winDismissed=false;
       $('game-title').firstChild.nodeValue=lv.name;
       $('game-sub').textContent=`${lv.sub} · ${N}×${N}`;
       $('ctl-generate').style.display='none';
       $('tip').innerHTML=lv.tip;
+      $('winbar').classList.remove('show');
+      buildToolbar();
+      showView('view-game');
+      renderBoardSkeleton();
+      render();
+      fitAllDescriptions();
+    }
+
+    /* ---- 經典固定題 ---- */
+    function openFixed(){
+      mode='fixed'; N=5; board=makeEmpty(5); showSolution=false; winDismissed=false;
+      $('game-title').firstChild.nodeValue=CLASSIC.name;
+      $('game-sub').textContent=CLASSIC.sub;
+      $('ctl-generate').style.display='none';
+      $('tip').innerHTML=CLASSIC.tip;
       $('winbar').classList.remove('show');
       buildToolbar();
       showView('view-game');
@@ -891,6 +995,10 @@
         $('win-msg').textContent='這一題全部變綠。要不要再來一題？';
         mk('再來一題', newPuzzle, 'primary');
         mk('回選單', goHome);
+      }else if(mode==='fixed'){
+        $('win-title').textContent='解開了！';
+        $('win-msg').textContent='你解開了經典 5×5 謎題，全部變綠！';
+        mk('回選單', goHome, 'primary');
       }else{
         $('win-title').textContent='通關！';
         const hasNext=tutIndex<TUTORIALS.length-1;
@@ -899,6 +1007,7 @@
         else mk('隨機挑戰', openGenerate, 'primary');
         mk('回選單', goHome);
       }
+      mk('關閉（看盤面）', ()=>{ winDismissed=true; $('winbar').classList.remove('show'); });
       confetti();
       if(navigator.vibrate) try{navigator.vibrate([12,40,12]);}catch(e){}
     }
@@ -909,6 +1018,7 @@
     $('game-back').addEventListener('click',goHome);
     $('card-play').addEventListener('click',openGenerate);
     $('card-tutorial').addEventListener('click',()=>openTutorial(0));
+    $('card-classic').addEventListener('click',openFixed);
     function setActiveChip(){ document.querySelectorAll('#ctl-generate .chip').forEach(c=>c.classList.toggle('on',+c.dataset.n===genSize)); }
     document.querySelectorAll('#ctl-generate .chip').forEach(chip=>chip.addEventListener('click',()=>{
       genSize=+chip.dataset.n; setActiveChip();
@@ -918,6 +1028,7 @@
     $('game-theme').addEventListener('click',toggleTheme);
     ['home-help','game-help'].forEach(id=>$(id).addEventListener('click',()=>openModal('modal-help')));
     $('home-ex').addEventListener('click',()=>{ buildExamplesNow(); openModal('modal-examples'); });
+    $('game-ex').addEventListener('click',()=>{ buildExamplesNow(); openModal('modal-examples'); });
 
     /* ---- 彈窗 ---- */
     function openModal(id){ $(id).classList.add('show'); document.body.style.overflow='hidden'; }
@@ -1019,7 +1130,7 @@
     if('requestIdleCallback' in window) requestIdleCallback(buildExamplesNow); else setTimeout(buildExamplesNow,400);
 
     /* ---- 自動縮字 ---- */
-    const MIN_FONT_PX=9;
+    const MIN_FONT_PX=8;
     function fitDescriptionForCell(cell){
       const desc=cell.querySelector('.desc'), mark=cell.querySelector('.mark'); if(!desc||!mark)return;
       const cs=getComputedStyle(cell);
