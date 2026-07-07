@@ -8,20 +8,20 @@
   <style>
     /* ============ 幾何・包浩斯 設計代幣 ============ */
     :root{
-      --bg:#efe7d4; --surface:#fbf8ef; --surface-2:#f3ecda; --surface-3:#e7ddc6;
-      --ink:#161512; --muted:#6c6455; --faint:#9a9384; --line:#161512;
-      --red:#e0401e; --yellow:#f4b70a; --blue:#2853a6; --green:#1f9d57;
-      --ok-bg:#e6f1d7; --ok-line:#1f9d57; --bad-bg:#f8ded1; --bad-line:#e0401e;
-      --primary:var(--blue);
+      --bg:#f4eede; --surface:#fdfaf1; --surface-2:#f4edda; --surface-3:#eadfc6;
+      --ink:#141310; --muted:#645b4a; --faint:#9a9384; --line:#141310;
+      --red:#E5231B; --yellow:#FFC400; --blue:#123FE0; --green:#12A150;
+      --ok-bg:#dcf0cc; --ok-line:#12A150; --bad-bg:#fbd6ca; --bad-line:#E5231B;
+      --poster-ink:#141310; --primary:var(--blue);
       --radius:0px; --safe-b:env(safe-area-inset-bottom,0px);
-      --bd:2.5px; --bdh:3px;
+      --bd:2.5px; --bdh:4px;
       --font: "Futura","Century Gothic","Trebuchet MS", ui-sans-serif, system-ui, -apple-system, "PingFang TC","Microsoft JhengHei", sans-serif;
     }
     :root[data-theme="dark"]{
-      --bg:#151410; --surface:#211f18; --surface-2:#1a1912; --surface-3:#2c2a20;
-      --ink:#f4efe1; --muted:#b6ad9a; --faint:#7d7565; --line:#f4efe1;
-      --red:#f2542d; --yellow:#f6c945; --blue:#5a86d6; --green:#3fbf77;
-      --ok-bg:#1f2f1a; --ok-line:#3fbf77; --bad-bg:#37201a; --bad-line:#f2542d;
+      --bg:#141310; --surface:#20201a; --surface-2:#191811; --surface-3:#2d2b20;
+      --ink:#f6f1e3; --muted:#b8af9c; --faint:#7d7565; --line:#f6f1e3;
+      --red:#FF4632; --yellow:#FFD22E; --blue:#4E78FF; --green:#2FD07A;
+      --ok-bg:#173018; --ok-line:#2FD07A; --bad-bg:#3a1d15; --bad-line:#FF4632;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -233,6 +233,42 @@
     .mini i.on{ background:radial-gradient(circle at 50% 50%, var(--blue) 0 56%, transparent 58%) }
     .ex-legend .sw.on{ background:radial-gradient(circle at 50% 50%, var(--blue) 0 56%, transparent 58%) }
 
+    /* ---------- 大膽首頁：海報 hero ---------- */
+    .hero{ position:relative; overflow:hidden; border:var(--bdh) solid var(--line); background:var(--yellow); color:var(--poster-ink); padding:30px 22px 26px; margin-bottom:0 }
+    .hero::before, .hero::after{ content:none }
+    .hero h1{ margin:0 0 12px; font-size:clamp(30px,9vw,46px); line-height:1.0; font-weight:900; letter-spacing:.005em; color:var(--poster-ink) }
+    .hero p{ margin:0; font-size:14.5px; line-height:1.5; font-weight:800; color:rgba(20,19,16,.82); max-width:24ch }
+    .hero .hs{ position:absolute; z-index:0 }
+    .hero > h1, .hero > p{ position:relative; z-index:1 }
+    .hs-circle{ right:-34px; top:-34px; width:132px; height:132px; border-radius:50%; background:var(--blue) }
+    .hs-sq{ right:96px; top:20px; width:38px; height:38px; background:var(--red) }
+    .hs-tri{ right:24px; bottom:-4px; width:0; height:0; border-left:36px solid transparent; border-right:36px solid transparent; border-bottom:62px solid var(--poster-ink) }
+
+    /* ---------- 包浩斯色帶 ---------- */
+    .bauhaus-bar{ display:flex; height:18px; border:var(--bdh) solid var(--line); border-top:none; margin-bottom:18px }
+    .bauhaus-bar i{ flex:1 }
+    .bauhaus-bar i+i{ border-left:var(--bd) solid var(--line) }
+    .bauhaus-bar i:nth-child(1){ background:var(--red) }
+    .bauhaus-bar i:nth-child(2){ background:var(--surface) }
+    .bauhaus-bar i:nth-child(3){ background:var(--blue) }
+    .bauhaus-bar i:nth-child(4){ background:var(--yellow) }
+    .bauhaus-bar i:nth-child(5){ background:var(--poster-ink) }
+
+    /* ---------- 大膽首頁：滿版色塊模式選擇 ---------- */
+    .bigmodes{ display:grid; grid-template-columns:1fr; gap:14px }
+    @media (min-width:560px){ .bigmodes{ grid-template-columns:1fr 1fr } }
+    .bigmode{ appearance:none; font-family:inherit; position:relative; overflow:hidden; text-align:left; border:var(--bdh) solid var(--line); padding:22px; min-height:150px; cursor:pointer; color:#fdfaf1; display:flex; flex-direction:column; gap:8px; transition:transform .08s ease }
+    .bigmode:active{ transform:translate(0,2px) }
+    .bigmode.mp{ background:var(--blue) }
+    .bigmode.mt{ background:var(--red) }
+    .bigmode > *{ position:relative; z-index:1 }
+    .bm-t{ font-size:26px; font-weight:900; letter-spacing:.02em }
+    .bm-s{ font-size:13px; font-weight:700; line-height:1.5; color:rgba(253,250,241,.94); max-width:26ch }
+    .bm-go{ margin-top:auto; font-size:14px; font-weight:900; letter-spacing:.06em }
+    .bm-shape{ position:absolute; z-index:0 }
+    .bigmode.mp .bm-shape{ right:-24px; bottom:-24px; width:104px; height:104px; border-radius:50%; background:var(--yellow) }
+    .bigmode.mt .bm-shape{ right:-14px; bottom:-30px; width:0; height:0; border-left:58px solid transparent; border-right:58px solid transparent; border-bottom:92px solid var(--yellow) }
+
   </style>
 </head>
 <body>
@@ -247,27 +283,25 @@
         <button class="btn icon" id="home-theme" title="切換深/淺色" aria-label="切換主題">🌙</button>
       </div>
       <div class="hero">
-        <h1>用邏輯，把整張表點成一片綠。</h1>
-        <p>每一格都寫著一句敘述。切換「打勾 / 留白」，讓每格的狀態都與敘述的真假一致——牽一髮而動全身的自我指涉謎題。</p>
-        <div class="cta">
-          <button class="btn primary" id="hero-play">🎲 隨機挑戰</button>
-          <button class="btn glass" id="hero-tutorial">🎓 新手教學</button>
-          <button class="btn glass" id="hero-howto">📖 遊戲說明</button>
-        </div>
+        <span class="hs hs-circle" aria-hidden="true"></span>
+        <span class="hs hs-sq" aria-hidden="true"></span>
+        <span class="hs hs-tri" aria-hidden="true"></span>
+        <h1>用邏輯<br>把整張表<br>點成一片綠</h1>
+        <p>每格一句敘述，切換打勾／留白，讓真假自圓其說。</p>
       </div>
-      <div class="section-title">選擇模式</div>
-      <div class="modes">
-        <button class="mode-card hot" id="card-play">
-          <div class="mode-ic">🎲</div>
-          <div class="mode-name">隨機挑戰</div>
-          <div class="mode-sub">每次自動生成保證有解的新題目，可選 2×2 / 3×3 / 4×4 / 5×5，還能顯示解答。</div>
-          <div class="mode-go">開始出題 →</div>
+      <div class="bauhaus-bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="bigmodes">
+        <button class="bigmode mp" id="card-play">
+          <span class="bm-shape" aria-hidden="true"></span>
+          <div class="bm-t">隨機挑戰</div>
+          <div class="bm-s">每次生成保證有解的新題，2×2 ～ 5×5 任選，可看解答。</div>
+          <div class="bm-go">開始出題 →</div>
         </button>
-        <button class="mode-card tut" id="card-tutorial">
-          <div class="mode-ic">🎓</div>
-          <div class="mode-name">新手教學</div>
-          <div class="mode-sub">4 個循序漸進的小關卡：認識規則、數量條件、行與列、圖形與鄰居。</div>
-          <div class="mode-go">開始學習 →</div>
+        <button class="bigmode mt" id="card-tutorial">
+          <span class="bm-shape" aria-hidden="true"></span>
+          <div class="bm-t">新手教學</div>
+          <div class="bm-s">4 個漸進小關：規則、數量、行列、圖形與鄰居。</div>
+          <div class="bm-go">開始學習 →</div>
         </button>
       </div>
       <div class="credits">
@@ -814,9 +848,7 @@
 
     /* ---- 事件綁定 ---- */
     $('game-back').addEventListener('click',goHome);
-    $('hero-play').addEventListener('click',openGenerate);
     $('card-play').addEventListener('click',openGenerate);
-    $('hero-tutorial').addEventListener('click',()=>openTutorial(0));
     $('card-tutorial').addEventListener('click',()=>openTutorial(0));
     function setActiveChip(){ document.querySelectorAll('#ctl-generate .chip').forEach(c=>c.classList.toggle('on',+c.dataset.n===genSize)); }
     document.querySelectorAll('#ctl-generate .chip').forEach(chip=>chip.addEventListener('click',()=>{
@@ -825,7 +857,7 @@
     }));
     $('home-theme').addEventListener('click',toggleTheme);
     $('game-theme').addEventListener('click',toggleTheme);
-    ['home-help','game-help','hero-howto'].forEach(id=>$(id).addEventListener('click',()=>openModal('modal-help')));
+    ['home-help','game-help'].forEach(id=>$(id).addEventListener('click',()=>openModal('modal-help')));
     $('home-ex').addEventListener('click',()=>{ buildExamplesNow(); openModal('modal-examples'); });
 
     /* ---- 彈窗 ---- */
