@@ -187,6 +187,43 @@
     .confetti-bit{position:absolute; top:-14px; width:12px; height:12px; will-change:transform,opacity; animation:fall linear forwards}
     @keyframes fall{to{transform:translateY(104vh) rotate(540deg); opacity:.85}}
     @media (prefers-reduced-motion:reduce){ *{animation-duration:.001ms !important; transition-duration:.05ms !important} }
+    /* ---------- 手機優化：尺寸分段控制 ---------- */
+    .sizechips{display:flex; align-items:center; gap:6px; margin-bottom:12px}
+    .sizechips .sizelbl{font-size:12px; font-weight:900; letter-spacing:.08em; color:var(--muted); margin-right:2px; white-space:nowrap}
+    .chip{appearance:none; border:var(--bd) solid var(--line); background:var(--surface); color:var(--ink); font-weight:900; font-size:15px; padding:9px 8px; min-height:44px; cursor:pointer; flex:1; min-width:0; touch-action:manipulation; transition:background .12s,color .12s}
+    .chip:hover{background:var(--surface-3)}
+    .chip.on{background:var(--blue); color:#fbf8ef}
+
+    /* ---------- 手機優化：底部固定操作列（拇指區） ---------- */
+    #view-game{padding-bottom:calc(92px + var(--safe-b))}
+    #toolbar{
+      position:fixed; left:0; right:0; bottom:0; z-index:40; margin:0 auto; width:min(760px,100%);
+      display:flex; flex-wrap:nowrap; gap:8px; margin-top:0;
+      padding:10px 12px calc(10px + var(--safe-b)); background:var(--surface); border-top:var(--bdh) solid var(--line);
+    }
+    #toolbar .btn{flex:1 1 0; min-width:0; padding:12px 4px; min-height:52px; font-size:14px; gap:4px; white-space:nowrap}
+
+    /* ---------- 手機優化：通關置中浮層 ---------- */
+    .winbar{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.94); width:min(360px,90vw); margin:0; z-index:65; padding:24px 20px}
+    .winbar.show{display:block; animation:winpop .32s cubic-bezier(.2,.9,.3,1.15) forwards}
+    @keyframes winpop{to{transform:translate(-50%,-50%) scale(1)}}
+    .winbar .btn{background:var(--surface)}
+
+    /* ---------- 範例圖示 ---------- */
+    .ex-legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; font-weight:800; color:var(--muted); margin:2px 0 4px}
+    .ex-legend span{display:inline-flex; align-items:center; gap:5px}
+    .ex-legend .sw{width:15px; height:15px; border:2px solid var(--line); background:var(--surface); display:inline-block; flex:none}
+    .ex-legend .sw.on{background:var(--ink)}
+    .ex-legend .sw.foc{outline:2px solid var(--red); outline-offset:1px}
+    .ex-item{display:flex; gap:12px; align-items:center}
+    .ex-illus{flex:none}
+    .ex-txt{min-width:0}
+    .mini{display:grid; grid-template-columns:repeat(var(--mn),1fr); gap:3px; width:88px; height:88px}
+    .mini i{border:2px solid var(--line); background:var(--surface)}
+    .mini i.on{background:var(--ink)}
+    .mini i.foc{outline:2.5px solid var(--red); outline-offset:1px; z-index:1}
+    .mini-none{display:grid; place-items:center; width:88px; height:88px; border:2px dashed var(--line); color:var(--muted); font-weight:900}
+
   </style>
 </head>
 <body>
@@ -249,19 +286,13 @@
         <div class="progress"><i id="progbar"></i></div>
       </div>
 
-      <!-- 隨機挑戰控制列 -->
-      <div class="controls" id="ctl-generate">
-        <div class="grp">
-          <label for="size" class="pill">尺寸</label>
-          <select id="size" class="select" aria-label="棋盤尺寸">
-            <option value="2">2×2</option>
-            <option value="3">3×3</option>
-            <option value="4" selected>4×4</option>
-            <option value="5">5×5</option>
-          </select>
-        </div>
-        <div class="spacer"></div>
-        <button class="btn sm primary" id="btn-new">✨ 產生新題</button>
+      <!-- 隨機挑戰：棋盤尺寸（分段式大按鈕，方便手指點） -->
+      <div class="sizechips" id="ctl-generate" role="group" aria-label="棋盤尺寸">
+        <span class="sizelbl">尺寸</span>
+        <button class="chip" data-n="2">2×2</button>
+        <button class="chip" data-n="3">3×3</button>
+        <button class="chip" data-n="4">4×4</button>
+        <button class="chip" data-n="5">5×5</button>
       </div>
 
       <div class="board" id="board" aria-label="邏輯賓果棋盤"></div>
@@ -301,7 +332,7 @@
       <div class="sheet-grip"></div>
       <button class="btn icon sheet-close" data-close aria-label="關閉">✕</button>
       <h2>📚 邏輯敘述範例</h2>
-      <p class="lead">以下是遊戲中會出現的各類敘述（取 5×5 為例）。每條都有「正敘述」與對應的「反敘述」——出題時會依答案自動挑選其中一種。</p>
+      <p class="lead">每一條敘述都配上一張「成立時的盤面圖示」（以 4×4 為例）。實心＝已打勾、灰底＝未打勾、紅框＝敘述所指的那一格。</p>
       <div id="examples"></div>
     </div>
   </div>
@@ -537,6 +568,7 @@
     let mode='generate';
     let tutIndex=0;
     let tutSolutionCache={};
+    let genSize=4;
 
     /* 教學關卡（用同一套 buildContext ctx 判定，全部已驗證有解） */
     const T_=()=>true, F_=()=>false;
@@ -690,7 +722,7 @@
 
     function openGenerate(){
       mode='generate';
-      N=parseInt($('size').value,10);   // 板面尺寸以下拉選單為準，避免從教學切回時不同步
+      N=genSize; setActiveChip();   // 板面尺寸以分段按鈕為準
       $('game-title').firstChild.nodeValue='隨機挑戰';
       $('game-sub').textContent=`${N}×${N} · 每題保證有解`;
       $('ctl-generate').style.display='';
@@ -740,10 +772,10 @@
     function buildToolbar(){
       const tb=$('toolbar'); tb.innerHTML='';
       const mk=(html,fn,cls)=>{ const b=document.createElement('button'); b.className='btn'+(cls?' '+cls:''); b.innerHTML=html; b.addEventListener('click',fn); tb.appendChild(b); return b; };
+      if(mode==='generate') mk('✨ 新題', newPuzzle, 'primary');
       mk('↺ 重設', ()=>{ board=makeEmpty(N); $('winbar').classList.remove('show'); render(); });
       mk('💡 提示', ()=>{ const bad=[...boardEl.querySelectorAll('.cell.bad')]; if(!bad.length){ toast('全部符合了！🎉'); return; } bad.forEach(el=>{el.classList.remove('hintpulse'); void el.offsetWidth; el.classList.add('hintpulse');}); });
-      mk('🔎 顯示解答', function(){ if(mode==='tutorial') bruteSolveTutorial(tutIndex); showSolution=!showSolution; this.innerHTML=showSolution?'🙈 隱藏解答':'🔎 顯示解答'; render(); });
-      if(mode==='generate') mk('🎲 隨機盤面', ()=>{ for(let r=0;r<N;r++)for(let c=0;c<N;c++)board[r][c]=Math.floor(Math.random()*3); $('winbar').classList.remove('show'); render(); });
+      mk('🔎 解答', function(){ if(mode==='tutorial') bruteSolveTutorial(tutIndex); showSolution=!showSolution; this.innerHTML=showSolution?'🙈 解答':'🔎 解答'; render(); });
     }
 
     /* ---- 通關 ---- */
@@ -776,12 +808,15 @@
     $('card-play').addEventListener('click',openGenerate);
     $('hero-tutorial').addEventListener('click',()=>openTutorial(0));
     $('card-tutorial').addEventListener('click',()=>openTutorial(0));
-    $('btn-new').addEventListener('click',newPuzzle);
-    $('size').addEventListener('change',e=>{ N=parseInt(e.target.value,10); $('game-sub').textContent=`${N}×${N} · 每題保證有解`; newPuzzle(); });
+    function setActiveChip(){ document.querySelectorAll('#ctl-generate .chip').forEach(c=>c.classList.toggle('on',+c.dataset.n===genSize)); }
+    document.querySelectorAll('#ctl-generate .chip').forEach(chip=>chip.addEventListener('click',()=>{
+      genSize=+chip.dataset.n; setActiveChip();
+      if(mode==='generate'){ N=genSize; $('game-sub').textContent=`${N}×${N} · 每題保證有解`; newPuzzle(); }
+    }));
     $('home-theme').addEventListener('click',toggleTheme);
     $('game-theme').addEventListener('click',toggleTheme);
     ['home-help','game-help','hero-howto'].forEach(id=>$(id).addEventListener('click',()=>openModal('modal-help')));
-    $('home-ex').addEventListener('click',()=>openModal('modal-examples'));
+    $('home-ex').addEventListener('click',()=>{ buildExamplesNow(); openModal('modal-examples'); });
 
     /* ---- 彈窗 ---- */
     function openModal(id){ $(id).classList.add('show'); document.body.style.overflow='hidden'; }
@@ -800,24 +835,56 @@
     }
     const CAT_ORDER=['數量類','行列類','連線・幾何類','角落・區域類','鄰居類','其他'];
     const CAT_COLOR={'數量類':'#6366f1','行列類':'#0ea5e9','連線・幾何類':'#10b981','角落・區域類':'#f59e0b','鄰居類':'#ec4899','其他':'#94a3b8'};
-    (function buildExamples(){
-      const descs=getBaseDescs(5).concat(buildLineDescs(5));
+    const EX_N=4;
+    function combosIdx(nbits,k){ const res=[]; (function rec(start,cur){ if(cur.length===k){res.push(cur.slice());return;} for(let i=start;i<nbits;i++){cur.push(i);rec(i+1,cur);cur.pop();} })(0,[]); return res; }
+    /* 用規則本身的 eval 暴力搜出「最少打勾、剛好成立」的示範盤面（與遊戲判定完全一致） */
+    function miniDemo(rule,n){
+      const savedN=N; N=n; let found=null;
+      for(let k=1;k<=n*n && !found;k++){
+        for(const idxs of combosIdx(n*n,k)){
+          const g=makeEmpty(n);
+          for(const i of idxs) g[Math.floor(i/n)][i%n]=CHECK;
+          const ctx=buildContext(g);
+          let anyTrue=false, allTrue=true, focus=null;
+          for(let r=0;r<n;r++)for(let c=0;c<n;c++){ const t=!!rule.eval(ctx,r,c); if(t){anyTrue=true; if(!focus)focus=[r,c];} else allTrue=false; }
+          if(anyTrue){ found={grid:g, focus: allTrue?null:focus}; break; }
+        }
+      }
+      N=savedN; return found;
+    }
+    function miniHTML(demo,n){
+      if(!demo) return '<div class="mini mini-none">—</div>';
+      let s=`<div class="mini" style="--mn:${n}">`;
+      for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+        const on=demo.grid[r][c]===CHECK;
+        const foc=demo.focus&&demo.focus[0]===r&&demo.focus[1]===c;
+        s+=`<i class="${on?'on':''}${foc?' foc':''}"></i>`;
+      }
+      return s+'</div>';
+    }
+    function buildExamplesNow(){
+      const wrap=$('examples'); if(wrap.dataset.built) return; wrap.dataset.built='1';
+      const descs=getBaseDescs(EX_N).concat(buildLineDescs(EX_N));
       const groups={};
       descs.forEach(d=>{ const k=categorize(d.pos); (groups[k]=groups[k]||[]).push(d); });
-      const wrap=$('examples');
+      const legend=document.createElement('div'); legend.className='ex-legend';
+      legend.innerHTML='<span><i class="sw on"></i>已打勾</span><span><i class="sw"></i>未打勾</span><span><i class="sw foc"></i>敘述指的那一格</span>';
+      wrap.appendChild(legend);
       CAT_ORDER.forEach(cat=>{
         const items=groups[cat]; if(!items||!items.length) return;
         const grp=document.createElement('div'); grp.className='ex-group';
         grp.innerHTML=`<h4><span class="dot" style="background:${CAT_COLOR[cat]}"></span>${cat}</h4>`;
         const list=document.createElement('div'); list.className='ex-list';
         items.forEach(d=>{
+          const demo=miniDemo(d,EX_N);
           const el=document.createElement('div'); el.className='ex-item';
-          el.innerHTML=`<div class="q">「${d.pos}」</div><div class="a"><b>反敘述：</b>「${d.neg}」</div>`;
+          el.innerHTML=`<div class="ex-illus">${miniHTML(demo,EX_N)}</div><div class="ex-txt"><div class="q">「${d.pos}」</div><div class="a"><b>反：</b>「${d.neg}」</div></div>`;
           list.appendChild(el);
         });
         grp.appendChild(list); wrap.appendChild(grp);
       });
-    })();
+    }
+    if('requestIdleCallback' in window) requestIdleCallback(buildExamplesNow); else setTimeout(buildExamplesNow,400);
 
     /* ---- 自動縮字 ---- */
     const MIN_FONT_PX=9;
