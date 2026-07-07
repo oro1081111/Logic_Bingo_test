@@ -224,6 +224,15 @@
     .mini i.foc{outline:2.5px solid var(--red); outline-offset:1px; z-index:1}
     .mini-none{display:grid; place-items:center; width:88px; height:88px; border:2px dashed var(--line); color:var(--muted); font-weight:900}
 
+    /* ---------- 幾何打勾標記（取代表情符號） ---------- */
+    .cell .mark{ width:clamp(15px,4.8vw,26px); height:clamp(15px,4.8vw,26px); min-height:0; font-size:0; line-height:0; border-radius:50%; box-sizing:border-box; background:transparent; border:0 }
+    .cell .mark.check{ background:var(--blue) }
+    .cell .mark.cross{ background:transparent; border:3px solid var(--muted) }
+    .cell .mark.blank{ background:transparent; border:0 }
+    .demo i.on::before{ content:""; width:13px; height:13px; border-radius:50%; background:var(--blue) }
+    .mini i.on{ background:radial-gradient(circle at 50% 50%, var(--blue) 0 56%, transparent 58%) }
+    .ex-legend .sw.on{ background:radial-gradient(circle at 50% 50%, var(--blue) 0 56%, transparent 58%) }
+
   </style>
 </head>
 <body>
@@ -262,7 +271,7 @@
         </button>
       </div>
       <div class="credits">
-        點格子切換 <b>空白 → ✅ → ❌</b>（空白與 ❌ 皆視為「未打勾」）。<br>
+        點格子切換 <b>空白 → ● 實心圓 → ○ 空心圓</b>（實心圓＝打勾；空白與空心圓皆視為「未打勾」）。<br>
         行＝直（column）、列＝橫（row），周圍＝周圍 8 宮格（不含自身）。<br>
         奧羅桌遊設計工作室 · 程式實作練習
       </div>
@@ -317,8 +326,8 @@
       <h2>📖 遊戲說明</h2>
       <p class="lead">邏輯賓果是一種「自我指涉」謎題：每格的敘述是否成立，取決於整張盤面現在的樣子；而盤面又由你決定。目標是讓所有格子同時自圓其說。</p>
       <div class="rule"><div class="ic">🎯</div><div><h4>目標</h4><p>讓棋盤上<b>每一格都變綠</b>。綠色代表「這格有沒有打勾」與「它的敘述在目前盤面是否為真」一致。全綠即通關。</p></div></div>
-      <div class="rule"><div class="ic">👆</div><div><h4>操作</h4><p>點一下格子循環切換：<b>空白 → ✅ → ❌</b>。✅ 代表打勾；空白與 ❌ 都算「沒打勾」（❌ 只是給你標記「我確定不勾」的輔助記號）。鍵盤可用 <span class="kbd">Enter</span> 或 <span class="kbd">空白鍵</span>。</p></div></div>
-      <div class="rule"><div class="ic">🚦</div><div><h4>綠與紅</h4><p>敘述成立且你有打勾 → 綠；敘述不成立且你沒打勾 → 綠。兩者不一致 → 紅框。符合的格右上角有<b>綠色圓形</b>、不符合則是<b>紅色三角形</b>標記。<span class="demo"><i class="g">✅</i><i class="g"> </i><i class="r">✅</i></span></p></div></div>
+      <div class="rule"><div class="ic">👆</div><div><h4>操作</h4><p>點一下格子循環切換：<b>空白 → ●（實心圓）→ ○（空心圓）</b>。<b>實心圓＝打勾</b>；空白與空心圓都算「沒打勾」（空心圓只是讓你標記「我確定這裡不勾」的記號）。鍵盤可用 <span class="kbd">Enter</span> 或 <span class="kbd">空白鍵</span>。</p></div></div>
+      <div class="rule"><div class="ic">🚦</div><div><h4>綠與紅</h4><p>敘述成立且你有打勾 → 綠；敘述不成立且你沒打勾 → 綠。兩者不一致 → 紅框。符合的格右上角有<b>綠色圓形</b>、不符合則是<b>紅色三角形</b>標記。<span class="demo"><i class="g on"></i><i class="g"></i><i class="r on"></i></span></p></div></div>
       <div class="rule"><div class="ic">🎲</div><div><h4>隨機挑戰</h4><p>「產生新題」會<b>先隨機生成一個答案，再據此指派每格敘述</b>，所以每一題都保證至少有一組解。卡住時可按「顯示解答」看提示。</p></div></div>
       <div class="rule"><div class="ic">🧭</div><div><h4>名詞約定</h4><p>本遊戲一律 <b>行＝直（column，↕）</b>、<b>列＝橫（row，↔）</b>；周圍＝該格周圍的 8 宮格（不含自身，邊角格較少）。</p></div></div>
       <div class="rule"><div class="ic">💡</div><div><h4>小訣竅</h4><p>先鎖定「一定成立 / 一定不成立」的格子，再處理數量條件——每多打一個勾都會牽動總數。卡住時按 <b>提示</b> 讓紅格閃一下。</p></div></div>
@@ -574,7 +583,7 @@
     const T_=()=>true, F_=()=>false;
     const TUTORIALS=[
       { name:'教學 1', sub:'認識規則', N:2,
-        tip:'<b>怎麼玩：</b>點格子在 空白→✅→❌ 之間切換。讓每一格「有沒有打勾」符合它寫的敘述，四格全變綠就過關！先試試「一定要打勾」和「一定要留白」的兩格。',
+        tip:'<b>怎麼玩：</b>點格子在 空白→●實心圓→○空心圓 之間切換。讓每一格「有沒有打勾」符合它寫的敘述，四格全變綠就過關！先試試「一定要打勾」和「一定要留白」的兩格。',
         cells:[
           {desc:'這一格一定要打勾', truth:T_},
           {desc:'這一格一定要留白', truth:F_},
@@ -670,7 +679,8 @@
       let okCount=0;
       boardEl.querySelectorAll('.cell').forEach(cell=>{
         const r=+cell.dataset.r, c=+cell.dataset.c, st=board[r][c];
-        cell.querySelector('[data-mark]').textContent = st===CHECK?'✅' : st===CROSS?'❌' : '　';
+        const mk=cell.querySelector('[data-mark]');
+        mk.className='mark '+(st===CHECK?'check':st===CROSS?'cross':'blank'); mk.textContent='';
         const solEl=cell.querySelector('[data-sol]');
         const solGrid = (mode==='generate') ? answer : tutSolutionCache[tutIndex];
         solEl.style.display = (showSolution && solGrid && solGrid[r][c]) ? 'block' : 'none';
