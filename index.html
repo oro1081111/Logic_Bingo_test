@@ -269,6 +269,30 @@
     .bigmode.mp .bm-shape{ right:-24px; bottom:-24px; width:104px; height:104px; border-radius:50%; background:var(--yellow) }
     .bigmode.mt .bm-shape{ right:-14px; bottom:-30px; width:0; height:0; border-left:58px solid transparent; border-right:58px solid transparent; border-bottom:92px solid var(--yellow) }
 
+    /* ---------- 頂部文字按鈕 + 幾何主題鍵 ---------- */
+    .btn.tb{ padding:0 13px; min-height:44px; font-size:14px; font-weight:900; letter-spacing:.06em }
+    .btn.tb.icon{ width:44px; padding:0 }
+    .ico-theme{ width:20px; height:20px; border-radius:50%; border:2.5px solid currentColor; background:linear-gradient(90deg,currentColor 0 50%, transparent 50% 100%) }
+
+    /* ---------- 遊戲標記：圈圈(○)＝打勾、叉叉(✕)＝排除 ---------- */
+    .cell .mark{ position:relative; border-radius:0 }
+    .cell .mark.check{ background:transparent; border:3px solid var(--blue); border-radius:50% }
+    .cell .mark.cross{ background:transparent; border:0 }
+    .cell .mark.cross::before, .cell .mark.cross::after{ content:""; position:absolute; left:50%; top:50%; width:3px; height:104%; background:var(--ink); border-radius:2px }
+    .cell .mark.cross::before{ transform:translate(-50%,-50%) rotate(45deg) }
+    .cell .mark.cross::after{ transform:translate(-50%,-50%) rotate(-45deg) }
+    /* 說明示意的圈圈 */
+    .demo i.on::before{ background:transparent; border:2.6px solid var(--blue); box-sizing:border-box }
+
+    /* ---------- 彈窗標題色塊、範例圖示強化 ---------- */
+    .sheet h2::before{ content:""; width:20px; height:20px; background:var(--blue); border:var(--bd) solid var(--line); flex:none }
+    #modal-examples .sheet h2::before{ background:var(--red) }
+    .ex-group > h4 .dot{ border:2px solid var(--line) }
+    .mini i.on{ background:var(--blue) }
+    .mini i.hl{ outline:3px solid var(--red); outline-offset:-1px; z-index:1 }
+    .ex-legend .sw.on{ background:var(--blue) }
+    .ex-legend .sw.hl{ outline:2.5px solid var(--red); outline-offset:1px; background:var(--surface) }
+
   </style>
 </head>
 <body>
@@ -278,9 +302,9 @@
       <div class="topbar">
         <div class="brand"><div class="logo" aria-hidden="true"></div><div><b>邏輯賓果</b><span>LOGIC BINGO</span></div></div>
         <div class="spacer"></div>
-        <button class="btn icon" id="home-help" title="遊戲說明" aria-label="遊戲說明">❔</button>
-        <button class="btn icon" id="home-ex" title="邏輯敘述範例" aria-label="邏輯敘述範例">📚</button>
-        <button class="btn icon" id="home-theme" title="切換深/淺色" aria-label="切換主題">🌙</button>
+        <button class="btn tb" id="home-help">說明</button>
+        <button class="btn tb" id="home-ex">範例</button>
+        <button class="btn tb icon" id="home-theme" aria-label="切換深/淺色"><span class="ico-theme" aria-hidden="true"></span></button>
       </div>
       <div class="hero">
         <span class="hs hs-circle" aria-hidden="true"></span>
@@ -305,7 +329,7 @@
         </button>
       </div>
       <div class="credits">
-        點格子切換 <b>空白 → ● 實心圓 → ○ 空心圓</b>（實心圓＝打勾；空白與空心圓皆視為「未打勾」）。<br>
+        點格子切換 <b>空白 → ○ 圈圈 → ✕ 叉叉</b>（圈圈＝打勾；空白與叉叉皆視為「未打勾」）。<br>
         行＝直（column）、列＝橫（row），周圍＝周圍 8 宮格（不含自身）。<br>
         奧羅桌遊設計工作室 · 程式實作練習
       </div>
@@ -317,8 +341,8 @@
         <button class="btn icon" id="game-back" aria-label="返回">←</button>
         <div class="game-title" id="game-title">關卡<small id="game-sub">—</small></div>
         <div class="spacer"></div>
-        <button class="btn icon" id="game-help" title="說明" aria-label="說明">❔</button>
-        <button class="btn icon" id="game-theme" title="切換主題" aria-label="切換主題">🌙</button>
+        <button class="btn tb" id="game-help">說明</button>
+        <button class="btn tb icon" id="game-theme" aria-label="切換主題"><span class="ico-theme" aria-hidden="true"></span></button>
       </div>
 
       <div class="statusbar">
@@ -341,7 +365,7 @@
       <div class="board" id="board" aria-label="邏輯賓果棋盤"></div>
 
       <div class="winbar" id="winbar">
-        <h3 id="win-title">🎉 通關！</h3>
+        <h3 id="win-title">通關！</h3>
         <p id="win-msg">所有格子的「是否打勾」都與敘述一致，全部變綠。</p>
         <div class="row" style="justify-content:center; gap:10px" id="win-actions"></div>
       </div>
@@ -357,10 +381,10 @@
     <div class="sheet">
       <div class="sheet-grip"></div>
       <button class="btn icon sheet-close" data-close aria-label="關閉">✕</button>
-      <h2>📖 遊戲說明</h2>
+      <h2>遊戲說明</h2>
       <p class="lead">邏輯賓果是一種「自我指涉」謎題：每格的敘述是否成立，取決於整張盤面現在的樣子；而盤面又由你決定。目標是讓所有格子同時自圓其說。</p>
       <div class="rule"><div class="ic">🎯</div><div><h4>目標</h4><p>讓棋盤上<b>每一格都變綠</b>。綠色代表「這格有沒有打勾」與「它的敘述在目前盤面是否為真」一致。全綠即通關。</p></div></div>
-      <div class="rule"><div class="ic">👆</div><div><h4>操作</h4><p>點一下格子循環切換：<b>空白 → ●（實心圓）→ ○（空心圓）</b>。<b>實心圓＝打勾</b>；空白與空心圓都算「沒打勾」（空心圓只是讓你標記「我確定這裡不勾」的記號）。鍵盤可用 <span class="kbd">Enter</span> 或 <span class="kbd">空白鍵</span>。</p></div></div>
+      <div class="rule"><div class="ic">👆</div><div><h4>操作</h4><p>點一下格子循環切換：<b>空白 → ○（圈圈）→ ✕（叉叉）</b>。<b>圈圈＝打勾</b>；空白與叉叉都算「沒打勾」（叉叉只是讓你標記「我確定這裡不勾」的記號）。鍵盤可用 <span class="kbd">Enter</span> 或 <span class="kbd">空白鍵</span>。</p></div></div>
       <div class="rule"><div class="ic">🚦</div><div><h4>綠與紅</h4><p>敘述成立且你有打勾 → 綠；敘述不成立且你沒打勾 → 綠。兩者不一致 → 紅框。符合的格右上角有<b>綠色圓形</b>、不符合則是<b>紅色三角形</b>標記。<span class="demo"><i class="g on"></i><i class="g"></i><i class="r on"></i></span></p></div></div>
       <div class="rule"><div class="ic">🎲</div><div><h4>隨機挑戰</h4><p>「產生新題」會<b>先隨機生成一個答案，再據此指派每格敘述</b>，所以每一題都保證至少有一組解。卡住時可按「顯示解答」看提示。</p></div></div>
       <div class="rule"><div class="ic">🧭</div><div><h4>名詞約定</h4><p>本遊戲一律 <b>行＝直（column，↕）</b>、<b>列＝橫（row，↔）</b>；周圍＝該格周圍的 8 宮格（不含自身，邊角格較少）。</p></div></div>
@@ -374,7 +398,7 @@
     <div class="sheet">
       <div class="sheet-grip"></div>
       <button class="btn icon sheet-close" data-close aria-label="關閉">✕</button>
-      <h2>📚 邏輯敘述範例</h2>
+      <h2>邏輯敘述範例</h2>
       <p class="lead">每一條敘述都配上一張「成立時的盤面圖示」（以 4×4 為例）。實心＝已打勾、灰底＝未打勾、紅框＝敘述所指的那一格。</p>
       <div id="examples"></div>
     </div>
@@ -617,7 +641,7 @@
     const T_=()=>true, F_=()=>false;
     const TUTORIALS=[
       { name:'教學 1', sub:'認識規則', N:2,
-        tip:'<b>怎麼玩：</b>點格子在 空白→●實心圓→○空心圓 之間切換。讓每一格「有沒有打勾」符合它寫的敘述，四格全變綠就過關！先試試「一定要打勾」和「一定要留白」的兩格。',
+        tip:'<b>怎麼玩：</b>點格子在 空白→○圈圈→✕叉叉 之間切換。讓每一格「有沒有打勾」符合它寫的敘述，四格全變綠就過關！先試試「一定要打勾」和「一定要留白」的兩格。',
         cells:[
           {desc:'這一格一定要打勾', truth:T_},
           {desc:'這一格一定要留白', truth:F_},
@@ -682,8 +706,7 @@
 
     /* ---- 主題 ---- */
     const rootEl=document.documentElement;
-    function applyTheme(t){ rootEl.setAttribute('data-theme',t); localStorage.setItem('lb_theme',t);
-      document.querySelectorAll('#home-theme,#game-theme').forEach(b=>b.textContent=(t==='dark'?'☀️':'🌙')); }
+    function applyTheme(t){ rootEl.setAttribute('data-theme',t); localStorage.setItem('lb_theme',t); }
     applyTheme(localStorage.getItem('lb_theme') || (matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
     function toggleTheme(){ applyTheme(rootEl.getAttribute('data-theme')==='dark'?'light':'dark'); }
 
@@ -816,10 +839,10 @@
     function buildToolbar(){
       const tb=$('toolbar'); tb.innerHTML='';
       const mk=(html,fn,cls)=>{ const b=document.createElement('button'); b.className='btn'+(cls?' '+cls:''); b.innerHTML=html; b.addEventListener('click',fn); tb.appendChild(b); return b; };
-      if(mode==='generate') mk('✨ 新題', newPuzzle, 'primary');
-      mk('↺ 重設', ()=>{ board=makeEmpty(N); $('winbar').classList.remove('show'); render(); });
-      mk('💡 提示', ()=>{ const bad=[...boardEl.querySelectorAll('.cell.bad')]; if(!bad.length){ toast('全部符合了！🎉'); return; } bad.forEach(el=>{el.classList.remove('hintpulse'); void el.offsetWidth; el.classList.add('hintpulse');}); });
-      mk('🔎 解答', function(){ if(mode==='tutorial') bruteSolveTutorial(tutIndex); showSolution=!showSolution; this.innerHTML=showSolution?'🙈 解答':'🔎 解答'; render(); });
+      if(mode==='generate') mk('新題', newPuzzle, 'primary');
+      mk('重設', ()=>{ board=makeEmpty(N); $('winbar').classList.remove('show'); render(); });
+      mk('提示', ()=>{ const bad=[...boardEl.querySelectorAll('.cell.bad')]; if(!bad.length){ toast('全部符合了！'); return; } bad.forEach(el=>{el.classList.remove('hintpulse'); void el.offsetWidth; el.classList.add('hintpulse');}); });
+      mk('解答', function(){ if(mode==='tutorial') bruteSolveTutorial(tutIndex); showSolution=!showSolution; this.textContent=showSolution?'隱藏解答':'解答'; render(); });
     }
 
     /* ---- 通關 ---- */
@@ -828,16 +851,16 @@
       const acts=$('win-actions'); acts.innerHTML='';
       const mk=(txt,fn,cls)=>{ const b=document.createElement('button'); b.className='btn'+(cls?' '+cls:''); b.textContent=txt; b.addEventListener('click',fn); acts.appendChild(b); };
       if(mode==='generate'){
-        $('win-title').textContent='🎉 解開了！';
+        $('win-title').textContent='解開了！';
         $('win-msg').textContent='這一題全部變綠。要不要再來一題？';
-        mk('✨ 再來一題', newPuzzle, 'primary');
+        mk('再來一題', newPuzzle, 'primary');
         mk('回選單', goHome);
       }else{
-        $('win-title').textContent='🎉 通關！';
+        $('win-title').textContent='通關！';
         const hasNext=tutIndex<TUTORIALS.length-1;
         $('win-msg').textContent=hasNext?'做得好！繼續下一個教學關卡。':'太棒了，你已完成所有教學！去挑戰隨機出題吧。';
         if(hasNext) mk('下一關 →', ()=>openTutorial(tutIndex+1), 'primary');
-        else mk('🎲 隨機挑戰', openGenerate, 'primary');
+        else mk('隨機挑戰', openGenerate, 'primary');
         mk('回選單', goHome);
       }
       confetti();
@@ -894,23 +917,49 @@
       }
       N=savedN; return found;
     }
-    function miniHTML(demo,n){
+    /* 找出「讓敘述成立的關鍵格」以便在圖示上標出（形狀／相鄰／整行列／角落…） */
+    function structureCells(pos,g,n){
+      const on=(r,c)=>g[r][c]===CHECK; const R=[]; const push=(r,c)=>{ if(r>=0&&r<n&&c>=0&&c<n) R.push(r*n+c); };
+      const wantChecked=!(/不勾/.test(pos)); let m;
+      if(/連線/.test(pos)){ for(let r=0;r<n;r++){let k=0;for(let c=0;c<n;c++)if(on(r,c))k++; if(k===n)for(let c=0;c<n;c++)push(r,c);} for(let c=0;c<n;c++){let k=0;for(let r=0;r<n;r++)if(on(r,c))k++; if(k===n)for(let r=0;r<n;r++)push(r,c);} let a=true,b=true;for(let i=0;i<n;i++){if(!on(i,i))a=false;if(!on(i,n-1-i))b=false;} if(a)for(let i=0;i<n;i++)push(i,i); if(b)for(let i=0;i<n;i++)push(i,n-1-i); return R; }
+      if(/整列/.test(pos)){ const t=wantChecked?n:0; for(let r=0;r<n;r++){let k=0;for(let c=0;c<n;c++)if(on(r,c))k++; if(k===t){for(let c=0;c<n;c++)push(r,c);return R;}} }
+      if(/整行/.test(pos)){ const t=wantChecked?n:0; for(let c=0;c<n;c++){let k=0;for(let r=0;r<n;r++)if(on(r,c))k++; if(k===t){for(let r=0;r<n;r++)push(r,c);return R;}} }
+      if(m=pos.match(/第(\d+)行/)){ const c=+m[1]-1; for(let r=0;r<n;r++)push(r,c); return R; }
+      if(m=pos.match(/第(\d+)列/)){ const r=+m[1]-1; for(let c=0;c<n;c++)push(r,c); return R; }
+      if(/對角線/.test(pos)){ let a=true,b=true; for(let i=0;i<n;i++){const x=on(i,i),y=on(i,n-1-i); if(wantChecked){if(!x)a=false;if(!y)b=false;}else{if(x)a=false;if(y)b=false;}} if(a){for(let i=0;i<n;i++)push(i,i);return R;} if(b){for(let i=0;i<n;i++)push(i,n-1-i);return R;} }
+      if(/2×2/.test(pos)){ const t=wantChecked?4:0; for(let r=0;r<n-1;r++)for(let c=0;c<n-1;c++){const s=on(r,c)+on(r,c+1)+on(r+1,c)+on(r+1,c+1); if(s===t){push(r,c);push(r,c+1);push(r+1,c);push(r+1,c+1);return R;}} }
+      if(/上下相鄰/.test(pos)){ for(let r=0;r<n-1;r++)for(let c=0;c<n;c++){const x=on(r,c),y=on(r+1,c); if(wantChecked?(x&&y):(!x&&!y)){push(r,c);push(r+1,c);return R;}} }
+      if(/上下左右均/.test(pos)){ for(let r=1;r<n-1;r++)for(let c=1;c<n-1;c++){const u=on(r-1,c),d=on(r+1,c),l=on(r,c-1),ri=on(r,c+1); if(wantChecked?(u&&d&&l&&ri):(!u&&!d&&!l&&!ri)){push(r,c);push(r-1,c);push(r+1,c);push(r,c-1);push(r,c+1);return R;}} }
+      if(/角/.test(pos)){ push(0,0);push(0,n-1);push(n-1,0);push(n-1,n-1); return R; }
+      if(/九宮格/.test(pos)){ const r0=/上/.test(pos)?0:n-3, c0=/左/.test(pos)?0:n-3; for(let r=r0;r<r0+3;r++)for(let c=c0;c<c0+3;c++)push(r,c); return R; }
+      if(/四格/.test(pos)&&/(左上|右上|左下|右下)/.test(pos)){ const r0=/上/.test(pos)?0:n-2, c0=/左/.test(pos)?0:n-2; for(let r=r0;r<r0+2;r++)for(let c=c0;c<c0+2;c++)push(r,c); return R; }
+      if(/中心/.test(pos)){ if(n%2){push((n-1)/2,(n-1)/2);}else{const mm=n/2;push(mm-1,mm-1);push(mm-1,mm);push(mm,mm-1);push(mm,mm);} return R; }
+      if(/周圍/.test(pos)){ const nbc=(r,c)=>{let s=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const rr=r+dr,cc=c+dc;if(rr>=0&&rr<n&&cc>=0&&cc<n&&on(rr,cc))s++;}return s;}; let best=null; for(let r=0;r<n&&!best;r++)for(let c=0;c<n&&!best;c++){const v=nbc(r,c); if(/≥\s*6/.test(pos)&&v>=6)best=[r,c]; else if(/≤\s*2/.test(pos)&&v<=2)best=[r,c];} if(best){push(best[0],best[1]); return R;} }
+      return R;
+    }
+    function miniHTML(rule,demo,n){
       if(!demo) return '<div class="mini mini-none">—</div>';
+      let hl=structureCells(rule.pos, demo.grid, n);
+      if(!hl.length && demo.focus) hl=[demo.focus[0]*n+demo.focus[1]];
+      const hset=new Set(hl);
       let s=`<div class="mini" style="--mn:${n}">`;
       for(let r=0;r<n;r++)for(let c=0;c<n;c++){
-        const on=demo.grid[r][c]===CHECK;
-        const foc=demo.focus&&demo.focus[0]===r&&demo.focus[1]===c;
-        s+=`<i class="${on?'on':''}${foc?' foc':''}"></i>`;
+        const on=demo.grid[r][c]===CHECK; const h=hset.has(r*n+c);
+        s+=`<i class="${on?'on':''}${h?' hl':''}"></i>`;
       }
       return s+'</div>';
     }
     function buildExamplesNow(){
       const wrap=$('examples'); if(wrap.dataset.built) return; wrap.dataset.built='1';
-      const descs=getBaseDescs(EX_N).concat(buildLineDescs(EX_N));
+      const base=getBaseDescs(EX_N), lines=buildLineDescs(EX_N);
+      const T=Math.max(1,Math.ceil(0.6*EX_N));
+      const colRep={ pos:`某一直行（↕）的打勾數 ≧ ${T}`, neg:`每一直行的打勾數都 ≦ ${T-1}`, eval: lines.find(d=>/第1行/.test(d.pos)).eval };
+      const rowRep={ pos:`某一橫列（↔）的打勾數 ≧ ${T}`, neg:`每一橫列的打勾數都 ≦ ${T-1}`, eval: lines.find(d=>/第1列/.test(d.pos)).eval };
       const groups={};
-      descs.forEach(d=>{ const k=categorize(d.pos); (groups[k]=groups[k]||[]).push(d); });
+      base.forEach(d=>{ const k=categorize(d.pos); (groups[k]=groups[k]||[]).push(d); });
+      (groups['行列類']=groups['行列類']||[]).push(colRep, rowRep);
       const legend=document.createElement('div'); legend.className='ex-legend';
-      legend.innerHTML='<span><i class="sw on"></i>已打勾</span><span><i class="sw"></i>未打勾</span><span><i class="sw foc"></i>敘述指的那一格</span>';
+      legend.innerHTML='<span><i class="sw on"></i>打勾</span><span><i class="sw"></i>未打勾</span><span><i class="sw hl"></i>敘述關鍵格</span>';
       wrap.appendChild(legend);
       CAT_ORDER.forEach(cat=>{
         const items=groups[cat]; if(!items||!items.length) return;
@@ -920,7 +969,7 @@
         items.forEach(d=>{
           const demo=miniDemo(d,EX_N);
           const el=document.createElement('div'); el.className='ex-item';
-          el.innerHTML=`<div class="ex-illus">${miniHTML(demo,EX_N)}</div><div class="ex-txt"><div class="q">「${d.pos}」</div><div class="a"><b>反：</b>「${d.neg}」</div></div>`;
+          el.innerHTML=`<div class="ex-illus">${miniHTML(d,demo,EX_N)}</div><div class="ex-txt"><div class="q">「${d.pos}」</div><div class="a"><b>反：</b>「${d.neg}」</div></div>`;
           list.appendChild(el);
         });
         grp.appendChild(list); wrap.appendChild(grp);
