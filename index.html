@@ -371,7 +371,7 @@
     .winbar, .winbar h3{ color:#141310 }
     /* 經典模式色塊改黑（原色＋黑白）＋黃三角 */
     .bigmode.mc{ background:#141310; color:#fdfaf1 }
-    .bigmode.mc .bm-shape{ border-bottom-color:var(--yellow) }
+    .bigmode.mc .bm-shape{ border:none; width:84px; height:84px; background:var(--yellow); right:-20px; bottom:-20px; transform:rotate(0deg) }
     /* 說明示意：符合＝黃、未符合＝白底紅底線 */
     .demo i.g{ background:var(--yellow); border-color:var(--line) }
     .demo i.r{ background:var(--surface); border-color:var(--line); border-bottom:4px solid var(--red) }
@@ -403,17 +403,17 @@
       </div>
       <div class="bauhaus-bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       <div class="bigmodes">
-        <button class="bigmode mp" id="card-play">
-          <span class="bm-shape" aria-hidden="true"></span>
-          <div class="bm-t">隨機挑戰</div>
-          <div class="bm-s">每次生成保證有解的新題，2×2 ～ 5×5 任選，可看解答。</div>
-          <div class="bm-go">開始出題 →</div>
-        </button>
         <button class="bigmode mt" id="card-tutorial">
           <span class="bm-shape" aria-hidden="true"></span>
           <div class="bm-t">新手教學</div>
           <div class="bm-s">4 個漸進小關：規則、數量、行列、圖形與鄰居。</div>
           <div class="bm-go">開始學習 →</div>
+        </button>
+        <button class="bigmode mp" id="card-play">
+          <span class="bm-shape" aria-hidden="true"></span>
+          <div class="bm-t">隨機挑戰</div>
+          <div class="bm-s">每次生成保證有解的新題，2×2 ～ 5×5 任選，可看解答。</div>
+          <div class="bm-go">開始出題 →</div>
         </button>
         <button class="bigmode mc" id="card-classic">
           <span class="bm-shape" aria-hidden="true"></span>
