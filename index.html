@@ -381,6 +381,10 @@
     .rule:nth-of-type(4) .ic{ background:var(--blue) }
     .mode-card.done .mode-name::after{ color:var(--blue) }
 
+    /* 範例：目標格（這一格）填黃色 */
+    .mini i.tg{ background:var(--yellow) }
+    .ex-legend .sw.tg{ background:var(--yellow) }
+
   </style>
 </head>
 <body>
@@ -494,7 +498,7 @@
       <div class="sheet-grip"></div>
       <button class="btn icon sheet-close" data-close aria-label="關閉">✕</button>
       <h2>邏輯敘述範例</h2>
-      <p class="lead">每一條敘述都配上一張「成立時的盤面圖示」（以 4×4 為例）。○ 圈圈＝打勾、灰底＝未打勾、紅框＝敘述所指的關鍵格。</p>
+      <p class="lead">每一條敘述都配上一張「成立時的盤面圖示」（以 4×4 為例）。○ 圈圈＝打勾、灰底＝未打勾、<b>黃底＝這一格（目標格）</b>、紅框＝相關格。</p>
       <div id="examples"></div>
     </div>
   </div>
@@ -1106,10 +1110,10 @@
       if(/2×2/.test(pos)){ const t=wantChecked?4:0; for(let r=0;r<n-1;r++)for(let c=0;c<n-1;c++){const s=on(r,c)+on(r,c+1)+on(r+1,c)+on(r+1,c+1); if(s===t){push(r,c);push(r,c+1);push(r+1,c);push(r+1,c+1);return R;}} }
       if(/上下相鄰/.test(pos)){ for(let r=0;r<n-1;r++)for(let c=0;c<n;c++){const x=on(r,c),y=on(r+1,c); if(wantChecked?(x&&y):(!x&&!y)){push(r,c);push(r+1,c);return R;}} }
       if(/上下左右均/.test(pos)){ for(let r=1;r<n-1;r++)for(let c=1;c<n-1;c++){const u=on(r-1,c),d=on(r+1,c),l=on(r,c-1),ri=on(r,c+1); if(wantChecked?(u&&d&&l&&ri):(!u&&!d&&!l&&!ri)){push(r,c);push(r-1,c);push(r+1,c);push(r,c-1);push(r,c+1);return R;}} }
-      if(/角/.test(pos)){ push(0,0);push(0,n-1);push(n-1,0);push(n-1,n-1); return R; }
-      if(/九宮格/.test(pos)){ const r0=/上/.test(pos)?0:n-3, c0=/左/.test(pos)?0:n-3; for(let r=r0;r<r0+3;r++)for(let c=c0;c<c0+3;c++)push(r,c); return R; }
-      if(/四格/.test(pos)&&/(左上|右上|左下|右下)/.test(pos)){ const r0=/上/.test(pos)?0:n-2, c0=/左/.test(pos)?0:n-2; for(let r=r0;r<r0+2;r++)for(let c=c0;c<c0+2;c++)push(r,c); return R; }
+      if(/四個角/.test(pos)){ push(0,0);push(0,n-1);push(n-1,0);push(n-1,n-1); return R; }
       if(/中心/.test(pos)){ if(n%2){push((n-1)/2,(n-1)/2);}else{const mm=n/2;push(mm-1,mm-1);push(mm-1,mm);push(mm,mm-1);push(mm,mm);} return R; }
+      if(/九宮格/.test(pos)){ const cs=[[0,0],[0,n-3],[n-3,0],[n-3,n-3]]; let best=cs[0],bs=-1; for(const q of cs){let s=0;for(let r=q[0];r<q[0]+3;r++)for(let c=q[1];c<q[1]+3;c++)s+=on(r,c); if(s>bs){bs=s;best=q;}} for(let r=best[0];r<best[0]+3;r++)for(let c=best[1];c<best[1]+3;c++)push(r,c); return R; }
+      if(/四格/.test(pos)){ const cs=[[0,0],[0,n-2],[n-2,0],[n-2,n-2]]; let best=cs[0],bs=-1; for(const q of cs){let s=0;for(let r=q[0];r<q[0]+2;r++)for(let c=q[1];c<q[1]+2;c++)s+=on(r,c); if(s>bs){bs=s;best=q;}} for(let r=best[0];r<best[0]+2;r++)for(let c=best[1];c<best[1]+2;c++)push(r,c); return R; }
       if(/周圍/.test(pos)){ let best=null; if(/≥\s*6/.test(pos)){for(let r=0;r<n&&!best;r++)for(let c=0;c<n&&!best;c++)if(nbc(r,c)>=6)best=[r,c];} else if(/≤\s*2/.test(pos)){for(let r=0;r<n&&!best;r++)for(let c=0;c<n&&!best;c++)if(nbc(r,c)<=2)best=[r,c];} if(!best&&focus)best=focus; if(best){const br=best[0],bc=best[1]; push(br,bc); for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue; push(br+dr,bc+dc);}} return R; }
       if(/整張表/.test(pos)){ for(let r=0;r<n;r++)for(let c=0;c<n;c++) if(on(r,c)) push(r,c); return R; }
       return R;
@@ -1119,24 +1123,32 @@
       let hl=structureCells(rule.pos, demo.grid, n, demo.focus);
       if(!hl.length && demo.focus) hl=[demo.focus[0]*n+demo.focus[1]];
       const hset=new Set(hl);
+      const targetIdx = (/這個格子|這一格/.test(rule.pos) && demo.focus) ? demo.focus[0]*n+demo.focus[1] : -1;
       let s=`<div class="mini" style="--mn:${n}">`;
       for(let r=0;r<n;r++)for(let c=0;c<n;c++){
-        const on=demo.grid[r][c]===CHECK; const h=hset.has(r*n+c);
-        s+=`<i class="${on?'on':''}${h?' hl':''}"></i>`;
+        const idx=r*n+c, on=demo.grid[r][c]===CHECK;
+        const cls=(on?'on':'')+(hset.has(idx)?' hl':'')+(idx===targetIdx?' tg':'');
+        s+=`<i class="${cls}"></i>`;
       }
       return s+'</div>';
     }
     function buildExamplesNow(){
       const wrap=$('examples'); if(wrap.dataset.built) return; wrap.dataset.built='1';
-      const base=getBaseDescs(EX_N), lines=buildLineDescs(EX_N);
+      const baseAll=getBaseDescs(EX_N), lines=buildLineDescs(EX_N);
       const T=Math.max(1,Math.ceil(0.6*EX_N));
       const colRep={ pos:`某一直行（↕）的打勾數 ≧ ${T}`, neg:`每一直行的打勾數都 ≦ ${T-1}`, eval: lines.find(d=>/第1行/.test(d.pos)).eval };
       const rowRep={ pos:`某一橫列（↔）的打勾數 ≧ ${T}`, neg:`每一橫列的打勾數都 ≦ ${T-1}`, eval: lines.find(d=>/第1列/.test(d.pos)).eval };
+      const isQuad=d=>/四格/.test(d.pos)&&/(左上|右上|左下|右下)/.test(d.pos);
+      const isNine=d=>/九宮格/.test(d.pos);
+      const quad=baseAll.find(isQuad), nine=baseAll.find(isNine);
+      const base=baseAll.filter(d=>!isQuad(d)&&!isNine(d));
+      if(quad) base.push({ pos:'某個角落的四格打勾數量 ≧ 2', neg:'四個角落的四格打勾數量都 < 2', eval:quad.eval });
+      if(nine) base.push({ pos:'某個角落的九宮格打勾數量 ≧ 5', neg:'四個角落的九宮格打勾數量都 ≦ 4', eval:nine.eval });
       const groups={};
       base.forEach(d=>{ const k=categorize(d.pos); (groups[k]=groups[k]||[]).push(d); });
       (groups['行列類']=groups['行列類']||[]).push(colRep, rowRep);
       const legend=document.createElement('div'); legend.className='ex-legend';
-      legend.innerHTML='<span><i class="sw on"></i>打勾</span><span><i class="sw"></i>未打勾</span><span><i class="sw hl"></i>敘述關鍵格</span>';
+      legend.innerHTML='<span><i class="sw on"></i>打勾</span><span><i class="sw"></i>未打勾</span><span><i class="sw tg"></i>目標格（這一格）</span><span><i class="sw hl"></i>相關格</span>';
       wrap.appendChild(legend);
       CAT_ORDER.forEach(cat=>{
         const items=groups[cat]; if(!items||!items.length) return;
