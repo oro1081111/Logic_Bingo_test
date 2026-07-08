@@ -498,7 +498,7 @@
       <div class="sheet-grip"></div>
       <button class="btn icon sheet-close" data-close aria-label="關閉">✕</button>
       <h2>邏輯敘述範例</h2>
-      <p class="lead">每一條敘述都配上一張「成立時的盤面圖示」（以 4×4 為例）。○ 圈圈＝打勾、灰底＝未打勾、<b>黃底＝這一格（目標格）</b>、紅框＝相關格。</p>
+      <p class="lead">每一條敘述都配上一張「成立時的盤面圖示」（以 4×4 為例）。○ 圈圈＝打勾、灰底＝未打勾、<b>黃底＝目標格</b>、紅框＝相關格。</p>
       <div id="examples"></div>
     </div>
   </div>
@@ -1140,15 +1140,16 @@
       const rowRep={ pos:`某一橫列（↔）的打勾數 ≧ ${T}`, neg:`每一橫列的打勾數都 ≦ ${T-1}`, eval: lines.find(d=>/第1列/.test(d.pos)).eval };
       const isQuad=d=>/四格/.test(d.pos)&&/(左上|右上|左下|右下)/.test(d.pos);
       const isNine=d=>/九宮格/.test(d.pos);
-      const quad=baseAll.find(isQuad), nine=baseAll.find(isNine);
+      const quad=baseAll.find(d=>isQuad(d)&&/左上/.test(d.pos));
+      const nine=baseAll.find(d=>isNine(d)&&/右下/.test(d.pos));
       const base=baseAll.filter(d=>!isQuad(d)&&!isNine(d));
-      if(quad) base.push({ pos:'某個角落的四格打勾數量 ≧ 2', neg:'四個角落的四格打勾數量都 < 2', eval:quad.eval });
-      if(nine) base.push({ pos:'某個角落的九宮格打勾數量 ≧ 5', neg:'四個角落的九宮格打勾數量都 ≦ 4', eval:nine.eval });
+      if(quad) base.push(quad);
+      if(nine) base.push(nine);
       const groups={};
       base.forEach(d=>{ const k=categorize(d.pos); (groups[k]=groups[k]||[]).push(d); });
       (groups['行列類']=groups['行列類']||[]).push(colRep, rowRep);
       const legend=document.createElement('div'); legend.className='ex-legend';
-      legend.innerHTML='<span><i class="sw on"></i>打勾</span><span><i class="sw"></i>未打勾</span><span><i class="sw tg"></i>目標格（這一格）</span><span><i class="sw hl"></i>相關格</span>';
+      legend.innerHTML='<span><i class="sw on"></i>打勾</span><span><i class="sw"></i>未打勾</span><span><i class="sw tg"></i>目標格</span><span><i class="sw hl"></i>相關格</span>';
       wrap.appendChild(legend);
       CAT_ORDER.forEach(cat=>{
         const items=groups[cat]; if(!items||!items.length) return;
